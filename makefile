@@ -1,0 +1,18 @@
+CC=gcc
+CFLAGS=-Werror -Wall -Wextra -g -pedantic
+SRC=src/
+BUILD=build/
+BIN=bin/
+DEPS=$(BUILD)lexer.o $(BUILD)token.o $(BUILD)parser.o $(BUILD)main.o
+
+all: lines $(BIN)main
+
+$(BUILD)%.o: $(SRC)%.c 
+	$(CC) $(CFLAGS) -o $@ $^ -c
+
+$(BIN)main: $(DEPS)
+	$(CC) $(CFLAGS) -o $@ $^
+
+lines:
+	@echo "C:"
+	@wc -l $$( find -wholename './*.[hc]' -not -path "./src/generation" ) | tail -n 1
