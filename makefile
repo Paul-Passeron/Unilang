@@ -3,7 +3,7 @@ CFLAGS=-Werror -Wall -Wextra -g -pedantic
 SRC=src/
 BUILD=build/
 BIN=bin/
-DEPS=$(BUILD)lexer.o $(BUILD)token.o $(BUILD)parser.o $(BUILD)main.o
+DEPS=$(BUILD)logger.o $(BUILD)lexer.o $(BUILD)token.o $(BUILD)parser.o $(BUILD)main.o $(BUILD)location.o
 
 all: lines $(BIN)main
 
