@@ -28,18 +28,17 @@ char consume_char(lexer_t *l) {
   }
   return res;
 }
+
 char peek_char(lexer_t l) {
   if (is_end_of_file(l))
     return 0;
   return l.buffer[l.buffer_index];
 }
+
 char peek_n_chars(lexer_t l, size_t n) {
   for (unsigned int i = 0; i < n - 1; i++)
     consume_char(&l);
   return peek_char(l);
 }
 
-bool is_end_of_file(lexer_t l) {
-  //
-  return l.buffer_index >= l.buffer_length;
-}
+bool is_end_of_file(lexer_t l) { return l.buffer_index >= l.buffer_length; }

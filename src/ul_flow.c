@@ -15,7 +15,8 @@ void ul_start(int argc, char **argv) {
   create_logger(&logger);
   ul_set_logger(&logger);
   logger_info(logger, "Started Unilang compiler");
-  new_arena(1024, false);
+  unsigned int arena = new_arena(1024, false);
+  set_arena(arena);
   lexer_t l;
   new_lexer(&l, "examples/hello_world.ul");
   while (!is_end_of_file(l)) {
@@ -23,7 +24,7 @@ void ul_start(int argc, char **argv) {
     printf("%c", c);
   }
   printf("\n");
-  destroy_arena();
+  destroy_arena(arena);
 }
 
 void ul_exit(unsigned char exit_code) {
