@@ -3,7 +3,7 @@ CFLAGS=-Werror -Wall -Wextra -g -pedantic
 SRC=src/
 BUILD=build/
 BIN=bin/
-DEPS=$(BUILD)logger.o $(BUILD)lexer.o $(BUILD)token.o $(BUILD)parser.o $(BUILD)main.o $(BUILD)location.o
+DEPS=$(BUILD)logger.o $(BUILD)lexer.o $(BUILD)token.o $(BUILD)parser.o $(BUILD)main.o $(BUILD)location.o $(BUILD)ul_assert.o $(BUILD)ul_flow.o 
 
 all: lines $(BIN)main
 
@@ -16,3 +16,7 @@ $(BIN)main: $(DEPS)
 lines:
 	@echo "C:"
 	@wc -l $$( find -wholename './*.[hc]' -not -path "./src/generation" ) | tail -n 1
+
+clean:
+	rm -rf $(BIN)*
+	rm -rf $(BUILD)/*

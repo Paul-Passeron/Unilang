@@ -1,12 +1,7 @@
-#include "../include/logger.h"
-#include "../include/location.h"
+#include "../include/ul_flow.h"
 
-int main(void) {
-  logger_t logger;
-  create_logger(&logger);
-  logger_info(logger, "Started Unilang compiler");
-
-  logger_info(logger, "Successfully ended Unilang compiler");
-  destroy_logger(logger);
+int main(int argc, char **argv) {
+  ul_start(argc, argv);
+  ul_end();
   return 0;
 }
