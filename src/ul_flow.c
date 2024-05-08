@@ -2,9 +2,7 @@
 #include "../include/logger.h"
 #include "../include/location.h"
 #include "../include/ul_assert.h"
-
-#define USE_LIBC_MALLOC
-#define UL_ALLOC_IMPLEMENTATION
+#include "../include/lexer.h"
 #include "../include/ul_allocator.h"
 
 #include <stdlib.h>
@@ -17,10 +15,15 @@ void ul_start(int argc, char **argv) {
   create_logger(&logger);
   ul_set_logger(&logger);
   logger_info(logger, "Started Unilang compiler");
-  // char *buffer = alloc_preset(10, 1, 0);
-  // sprintf(buffer, "lolilol");
-  // logger_info(logger, buffer);
-  // free_ul(buffer);
+  new_arena(1024, false);
+  lexer_t l;
+  new_lexer(&l, "examples/hello_world.ul");
+  while (!is_end_of_file(l)) {
+    char c = consume_char(&l);
+    printf("%c", c);
+  }
+  printf("\n");
+  destroy_arena();
 }
 
 void ul_exit(unsigned char exit_code) {
