@@ -1,6 +1,7 @@
 #include "../include/logger.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include "../include/ul_compiler_globals.h"
 
 void create_logger(logger_t *logger) {
   logger->severity = SEV_INFO;
@@ -93,3 +94,31 @@ void set_logger_output_file(logger_t *logger, const char *path) {
 }
 
 void set_logger_output(logger_t *logger, FILE *out) { logger->output = out; }
+
+void ul_logger_info(const char *str) { logger_info(ul_global_logger, str); }
+
+void ul_logger_warn(const char *str) { logger_warn(ul_global_logger, str); }
+
+void ul_logger_erro(const char *str) { logger_erro(ul_global_logger, str); }
+
+void ul_logger_info_location(location_t loc, const char *str) {
+  logger_info_location(ul_global_logger, loc, str);
+}
+
+void ul_logger_warn_location(location_t loc, const char *str) {
+  logger_warn_location(ul_global_logger, loc, str);
+}
+
+void ul_logger_erro_location(location_t loc, const char *str) {
+  logger_erro_location(ul_global_logger, loc, str);
+}
+
+void ul_set_logger_output_file(const char *path) {
+  set_logger_output_file(&ul_global_logger, path);
+}
+
+void ul_set_logger_output(FILE *out) {
+  set_logger_output(&ul_global_logger, out);
+}
+
+void ul_destroy_logger(void) { destroy_logger(ul_global_logger); }

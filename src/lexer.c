@@ -1,6 +1,8 @@
 #include "../include/lexer.h"
 #include "../include/ul_allocator.h"
-
+#include <stdlib.h>
+#include <stdio.h>
+#include "../include/logger.h"
 void new_lexer(lexer_t *l, const char *path) { //
   l->filename = path;
   l->current_loc.col = 1;
@@ -9,6 +11,12 @@ void new_lexer(lexer_t *l, const char *path) { //
   l->buffer_index = 0;
   l->state = LS_DEFAULT;
   FILE *f = fopen(path, "r");
+  if (f == NULL) {
+    char buffer[1024] = {0};
+    sprintf(buffer, "Could not load file \'%s\'", path);
+    ul_logger_erro(buffer);
+    exit(1);
+  }
   fseek(f, 0, SEEK_END);
   size_t length = ftell(f);
   l->buffer_length = length;

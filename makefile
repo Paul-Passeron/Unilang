@@ -3,9 +3,11 @@ CFLAGS=-Werror -Wall -Wextra -g -pedantic
 SRC=src/
 BUILD=build/
 BIN=bin/
-DEPS=$(BUILD)logger.o $(BUILD)lexer.o $(BUILD)token.o $(BUILD)parser.o $(BUILD)main.o $(BUILD)location.o $(BUILD)ul_assert.o $(BUILD)ul_flow.o $(BUILD)ul_allocator.o
+DEPS=$(BUILD)logger.o $(BUILD)lexer.o $(BUILD)token.o $(BUILD)parser.o $(BUILD)main.o $(BUILD)location.o $(BUILD)ul_assert.o $(BUILD)ul_flow.o $(BUILD)ul_allocator.o $(BUILD)ul_compiler_globals.o
 
-all: lines $(BIN)main
+all: lines main
+
+main: $(BIN)main
 
 $(BUILD)%.o: $(SRC)%.c 
 	$(CC) $(CFLAGS) -o $@ $^ -c

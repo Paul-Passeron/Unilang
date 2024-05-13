@@ -37,4 +37,13 @@ void set_logger_output_file(logger_t *logger, const char *path);
 
 void set_logger_output(logger_t *logger, FILE *out);
 
+void ul_logger_info(const char *str);
+void ul_logger_warn(const char *str);
+void ul_logger_erro(const char *str);
+void ul_logger_info_location(location_t loc, const char *str);
+void ul_logger_warn_location(location_t loc, const char *str);
+void ul_logger_erro_location(location_t loc, const char *str);
+void ul_set_logger_output_file(const char *path);
+void ul_set_logger_output(FILE *out);
+void ul_destroy_logger(void);
 #endif // LOGGER_H

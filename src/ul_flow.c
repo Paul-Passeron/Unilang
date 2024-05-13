@@ -4,34 +4,35 @@
 #include "../include/ul_assert.h"
 #include "../include/lexer.h"
 #include "../include/ul_allocator.h"
-
+#include "../include/ul_compiler_globals.h"
 #include <stdlib.h>
-
-logger_t logger;
 
 void ul_start(int argc, char **argv) {
   (void)argc;
   (void)argv;
-  create_logger(&logger);
-  ul_set_logger(&logger);
-  logger_info(logger, "Started Unilang compiler");
+  create_logger(&ul_global_logger);
+  ul_set_logger(&ul_global_logger);
+
+  ul_logger_info("Started Unilang compiler");
   unsigned int arena = new_arena(1024, false);
   set_arena(arena);
   lexer_t l;
   new_lexer(&l, "examples/hello_world.ul");
+  putchar(10);
   while (!is_end_of_file(l)) {
     char c = consume_char(&l);
-    printf("%c", c);
+    putchar(c);
   }
-  printf("\n");
+  putchar(10);
+  putchar(10);
   destroy_arena(arena);
 }
 
 void ul_exit(unsigned char exit_code) {
-  destroy_logger(logger);
+  ul_destroy_logger();
   exit(exit_code);
 }
 void ul_end(void) {
-  logger_info(logger, "Ended Unilang compiler");
+  ul_logger_info("Ended Unilang compiler");
   ul_exit(0);
 }
