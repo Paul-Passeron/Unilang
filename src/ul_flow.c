@@ -11,8 +11,6 @@ void ul_start(int argc, char **argv) {
   (void)argc;
   (void)argv;
   create_logger(&ul_global_logger);
-  ul_set_logger(&ul_global_logger);
-
   ul_logger_info("Started Unilang compiler");
   unsigned int arena = new_arena(1024, false);
   set_arena(arena);

@@ -3,27 +3,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "../include/logger.h"
-void new_lexer(lexer_t *l, const char *path) { //
+#include "../include/ul_io.h"
+
+void new_lexer(lexer_t *l, const char *path) {
   l->filename = path;
   l->current_loc.col = 1;
   l->current_loc.line = 1;
   l->current_loc.filename = path;
   l->buffer_index = 0;
   l->state = LS_DEFAULT;
-  FILE *f = fopen(path, "r");
-  if (f == NULL) {
-    char buffer[1024] = {0};
-    sprintf(buffer, "Could not load file \'%s\'", path);
-    ul_logger_erro(buffer);
-    exit(1);
-  }
-  fseek(f, 0, SEEK_END);
-  size_t length = ftell(f);
-  l->buffer_length = length;
-  fseek(f, 0, SEEK_SET);
-  l->buffer = alloc(length, 1);
-  fread(l->buffer, 1, length, f);
-  fclose(f);
+  read_file(path, &l->buffer, &l->buffer_length);
 }
 
 char consume_char(lexer_t *l) {
