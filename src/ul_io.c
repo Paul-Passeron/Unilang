@@ -17,7 +17,12 @@ void read_file(const char *path, char **dst, size_t *length) {
   *length = ftell(f);
   fseek(f, 0, SEEK_SET);
   *dst = alloc(*length + 1, 1);
-  fread(*dst, 1, *length, f);
+  if (fread(*dst, 1, *length, f) != *length) {
+    char buffer[1024] = {0};
+    sprintf(buffer, "Could not read file \'%s\'", path);
+    ul_logger_erro(buffer);
+    ul_exit(1);
+  }
   (*dst)[*length] = 0;
   fclose(f);
 }
