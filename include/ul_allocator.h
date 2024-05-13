@@ -7,15 +7,16 @@
 
 typedef struct arena_t {
   size_t size;
-  bool should_grow;
   size_t fill;
   void *contents;
 } arena_t;
 
-unsigned int new_arena(size_t size, bool should_grow);
+unsigned int new_arena(size_t size);
 void destroy_arena(unsigned int id);
 void set_arena(unsigned int id);
 unsigned int get_arena(void);
+
+void clear_allocator(void);
 
 void *alloc_preset(size_t n, size_t s, char value);
 void *alloc_preset_ptr(size_t n, size_t s, char *value);

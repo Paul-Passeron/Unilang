@@ -38,6 +38,8 @@ typedef enum token_kind_t {
 
 } token_kind_t;
 
+#define MAX_ITEM_SIZE 1024
+
 typedef struct token_t {
   token_kind_t kind;
   const char *lexeme;

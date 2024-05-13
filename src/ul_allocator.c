@@ -16,17 +16,14 @@ int get_first_empty_id(void) {
   return -1;
 }
 
-unsigned int new_arena(size_t size, bool should_grow) {
+unsigned int new_arena(size_t size) {
   int res = get_first_empty_id();
   ul_assert(res >= 0,
             "new_arena: Could not create arena... Max arena number exceeded");
 
   void *contents = malloc(size);
   ul_assert(contents != NULL, "new_arena: Could not allocate contents");
-  arena_t tmp = {.size = size,
-                 .should_grow = should_grow,
-                 .fill = 0,
-                 .contents = contents};
+  arena_t tmp = {.size = size, .fill = 0, .contents = contents};
   __internal_arenas[res] = tmp;
   __internal_arenas_popul[res] = true;
   return res;
@@ -41,28 +38,28 @@ void destroy_arena(unsigned int id) {
   __internal_arenas_popul[id] = false;
 }
 
-void set_arena(unsigned int id) { //
+void set_arena(unsigned int id) {
   ul_assert(__internal_arenas_popul[id], "set_arena: Invalid arena id.");
   __internal_current_arena = id;
 }
 
 unsigned int get_arena(void) { return __internal_current_arena; }
 
+void clear_allocator(void) {
+  for (int i = 0; i < MAX_ARENAS_NUM; i++) {
+    if (__internal_arenas_popul[i])
+      destroy_arena(i);
+  }
+}
+
 void *__internal_alloc(size_t s) {
   ul_assert(__internal_current_arena >= 0,
             "Could not allocate: No arena found");
   ul_assert(__internal_arenas_popul[__internal_current_arena],
             "Could not allocate: No arena found");
-  ul_assert(__internal_arenas[__internal_current_arena].fill + s <
-                    __internal_arenas[__internal_current_arena].size ||
-                __internal_arenas[__internal_current_arena].should_grow,
+  ul_assert(__internal_arenas[__internal_current_arena].fill + s <=
+                __internal_arenas[__internal_current_arena].size,
             "Could not allocate: Arena can't grow and s can't fit more alloc");
-  if (__internal_arenas[__internal_current_arena].fill + s >=
-      __internal_arenas[__internal_current_arena].size) {
-    // realloc
-    ul_assert(false, "__internal_alloc: realloc not implemented yet for arenas "
-                     "that can grow");
-  }
   void *res = (char *)__internal_arenas[__internal_current_arena].contents +
               __internal_arenas[__internal_current_arena].fill;
   __internal_arenas[__internal_current_arena].fill += s;

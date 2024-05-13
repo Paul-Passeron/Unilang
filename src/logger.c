@@ -37,6 +37,7 @@ void logger_log_with_severity(logger_t logger, const char *str,
   } break;
   }
   fprintf(logger.output, " %s\n", str);
+  fflush(logger.output);
 }
 
 void logger_info(logger_t logger, const char *str) {
@@ -70,6 +71,7 @@ void logger_log_with_severity_location(logger_t logger, location_t loc,
   fprintf(logger.output, " ");
   print_location(logger.output, loc);
   fprintf(logger.output, " %s\n", str);
+  fflush(logger.output);
 }
 
 void logger_info_location(logger_t logger, location_t loc, const char *str) {
