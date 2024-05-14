@@ -72,6 +72,9 @@ void __internal_resize_dyn_array(__internal_dyn_array_t *arr) {
   arr->contents = new_contents;
   arr->capacity = new_cap;
 }
+
 void *__internal_dyn_get(__internal_dyn_array_t arr, size_t index) {
   return (char *)arr.contents + index * arr.stride;
 }
+
+size_t ul_dyn_length(__internal_dyn_array_t arr) { return arr.length; }

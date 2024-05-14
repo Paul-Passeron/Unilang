@@ -13,6 +13,8 @@ typedef struct __internal_dyn_array_t {
   unsigned int arena;
 } __internal_dyn_array_t;
 
+#define MAX_ITEM_SIZE 1024
+
 void ul_dyn_append(__internal_dyn_array_t *arr, ...);
 void __internal_resize_dyn_array(__internal_dyn_array_t *arr);
 void *__internal_dyn_get(__internal_dyn_array_t arr, size_t index);
@@ -24,6 +26,8 @@ __internal_dyn_array_t __internal_new_dyn_array(size_t size);
 #define new_dyn(type) __internal_new_dyn_array(sizeof(type));
 
 void ul_dyn_destroy(__internal_dyn_array_t arr);
+
+size_t ul_dyn_length(__internal_dyn_array_t arr);
 
 // TOKEN
 typedef __internal_dyn_array_t token_array_t;
