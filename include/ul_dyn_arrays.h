@@ -34,4 +34,10 @@ typedef __internal_dyn_array_t token_array_t;
 #define dyn_tok_get(arr, index) ul_dyn_get(arr, index, token_t)
 #define new_tok_dyn() new_dyn(token_t)
 
+
+// AST
+typedef __internal_dyn_array_t ast_array_t;
+#define dyn_ast_get(arr, index) ul_dyn_get(arr, index, ast_t)
+#define new_ast_dyn() new_dyn(ast_t)
+
 #endif // UL_DYN_ARRAYS_H
