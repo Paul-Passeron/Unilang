@@ -1,8 +1,7 @@
 #include "../include/ul_flow.h"
-#include "../include/logger.h"
-#include "../include/location.h"
-#include "../include/ul_assert.h"
 #include "../include/lexer.h"
+#include "../include/logger.h"
+#include "../include/parser.h"
 #include "../include/ul_allocator.h"
 #include "../include/ul_compiler_globals.h"
 #include "../include/ul_dyn_arrays.h"
@@ -27,6 +26,13 @@ void ul_start(int argc, char **argv) {
   for (size_t i = 0; i < toks_length; i++) {
     token_t tok = dyn_tok_get(l.toks, i);
     print_token(tok);
+  }
+
+  parser_t p = new_parser(l.toks);
+
+  while (!is_parser_done(p)) {
+    token_t tok = consume_parser(&p);
+    ul_logger_info_location(tok.location, token_kind_to_str(tok.kind));
   }
 
   destroy_lexer(l);

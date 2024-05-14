@@ -1,9 +1,9 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-#include <stdbool.h>
-#include "ul_dyn_arrays.h"
 #include "location.h"
+#include "ul_dyn_arrays.h"
+#include <stdbool.h>
 
 typedef enum lexer_state_t {
   LS_DEFAULT,

@@ -65,6 +65,18 @@ typedef struct ast_prog_t {
   ast_array_t prog; // dynamic array of ast nodes that represent the program
 } ast_prog_t;
 
+// Function defenition parameter ast node
+typedef struct ast_fundef_param_t {
+  ast_t type; // should be an identifier maybe ?
+  char *name; // maybe should convert to an identifier as well ?
+} ast_fundef_param_t;
+
+typedef struct ast_fundef_t {
+  ast_array_t params; // array of asts that should be seen as ast_fundef_param_t
+  ast_t return_type;  // the return type of the function
+  char *name;         // the name of the function
+} ast_fundef_t;
+
 // union for all ast nodes
 typedef union ast_as_t {
   ast_str_lit_t *strlit;

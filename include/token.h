@@ -8,9 +8,7 @@ typedef enum token_kind_t {
   T_STRLIT,
   T_NUMLIT,
   T_CHARLIT,
-
   T_WORD,
-
   T_PLUS,
   T_MINUS,
   T_MULT,
@@ -25,7 +23,6 @@ typedef enum token_kind_t {
   T_NOT,
   T_EQ,
   T_DIFF,
-
   T_BIGARR,
   T_SMALLARR,
   T_OPENPAREN,
@@ -46,6 +43,8 @@ typedef struct token_t {
   char *lexeme;
   location_t location;
 } token_t;
+
+const char *token_kind_to_str(token_kind_t t);
 
 void print_token(token_t tok);
 

@@ -1,12 +1,5 @@
-// Single line comment...
+// Marie je t'aime
 
-/*
- * multi
- * line
- * comment
- */
-
-// Single line comment
 let main(): void => {
   print("Hello, World !\n");
-}
+ }

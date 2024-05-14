@@ -1,8 +1,8 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#include <stdio.h>
 #include "location.h"
+#include <stdio.h>
 
 typedef enum logger_severity_t {
   SEV_INFO,

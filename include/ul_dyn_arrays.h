@@ -1,9 +1,9 @@
 #ifndef UL_DYN_ARRAYS_H
 #define UL_DYN_ARRAYS_H
 
-#include <stddef.h>
-#include <stdarg.h>
 #include "token.h"
+#include <stdarg.h>
+#include <stddef.h>
 
 typedef struct __internal_dyn_array_t {
   size_t stride;
@@ -33,7 +33,6 @@ size_t ul_dyn_length(__internal_dyn_array_t arr);
 typedef __internal_dyn_array_t token_array_t;
 #define dyn_tok_get(arr, index) ul_dyn_get(arr, index, token_t)
 #define new_tok_dyn() new_dyn(token_t)
-
 
 // AST
 typedef __internal_dyn_array_t ast_array_t;

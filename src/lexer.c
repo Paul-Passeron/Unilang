@@ -135,13 +135,13 @@ bool step_default(lexer_t *l) {
 
   if (matches_string(*l, "\"")) {
     l->state = LS_STRING_LIT;
-    (void)consume_char(l);
+    // (void)consume_char(l);
     return true;
   }
 
   if (matches_string(*l, "\'")) {
     l->state = LS_CHAR_LIT;
-    (void)consume_char(l);
+    // (void)consume_char(l);
     return true;
   }
 
@@ -209,15 +209,14 @@ bool step_word(lexer_t *l) {
 
 bool step_strlit(lexer_t *l) {
   char buffer[1025] = {0};
-  buffer[0] = '\"';
-  size_t current_index = 1;
   location_t loc = l->current_loc;
+  size_t current_index = 0;
+  buffer[current_index++] = consume_char(l);
   while (!is_end_of_file(*l) && !matches_string(*l, "\"") &&
          current_index < 1024) {
     buffer[current_index++] = consume_char(l);
   }
-  consume_char(l); // "
-  buffer[current_index++] = '\"';
+  buffer[current_index++] = consume_char(l);
   token_t tok;
   tok.location = loc;
   tok.kind = T_STRLIT;
@@ -233,15 +232,14 @@ bool step_strlit(lexer_t *l) {
 
 bool step_charlit(lexer_t *l) {
   char buffer[5] = {0};
-  buffer[0] = '\'';
-  size_t current_index = 1;
   location_t loc = l->current_loc;
-  while (!is_end_of_file(*l) && !matches_string(*l, "\'") &&
+  size_t current_index = 0;
+  buffer[current_index++] = consume_char(l);
+  while (!is_end_of_file(*l) && !matches_string(*l, "\"") &&
          current_index < 1024) {
     buffer[current_index++] = consume_char(l);
   }
-  consume_char(l); // '
-  buffer[current_index++] = '\'';
+  buffer[current_index++] = consume_char(l);
   token_t tok;
   tok.location = loc;
   tok.kind = T_STRLIT;

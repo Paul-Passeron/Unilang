@@ -1,9 +1,9 @@
 #ifndef UL_ALLOCATOR_H
 #define UL_ALLOCATOR_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
-#include <stdbool.h>
 
 typedef struct arena_t {
   size_t size;
