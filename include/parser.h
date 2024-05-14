@@ -7,6 +7,7 @@
 #define PARSER_H
 
 #include "../include/token.h"
+#include "../include/ul_ast.h"
 #include "../include/ul_dyn_arrays.h"
 #include <stdbool.h>
 
@@ -34,5 +35,18 @@ void expect_lexeme(parser_t p, const char *lexeme);
 
 // returns the current token and avances to the next one
 token_t consume_parser(parser_t *p);
+
+// parses the program and returns the ast
+ast_t parse_program(parser_t *p);
+
+ast_t parse_statement(parser_t *p);
+ast_t parse_expression(parser_t *p);
+ast_t parse_strlit(parser_t *p);
+ast_t parse_numlit(parser_t *p);
+ast_t parse_charlit(parser_t *p);
+ast_t parse_fundef(parser_t *p);
+ast_t parse_fundef_param(parser_t *p);
+ast_t parse_funcall(parser_t *p);
+ast_t parse_identifier(parser_t *p);
 
 #endif // PARSER_H

@@ -1,7 +1,7 @@
 #include "../include/logger.h"
-#include <stdlib.h>
-#include <stdio.h>
 #include "../include/ul_compiler_globals.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 void create_logger(logger_t *logger) {
   logger->severity = SEV_INFO;
@@ -27,13 +27,13 @@ void logger_log_with_severity(logger_t logger, const char *str,
     return;
   switch (severity) {
   case SEV_INFO: {
-    fprintf(logger.output, "[INFO]");
+    fprintf(logger.output, "\033[0;32m[INFO]\033[0m");
   } break;
   case SEV_WARN: {
-    fprintf(logger.output, "[WARNING]");
+    fprintf(logger.output, "\033[0;35m[WARNING]\033[0m");
   } break;
   case SEV_ERRO: {
-    fprintf(logger.output, "[ERROR]");
+    fprintf(logger.output, "\033[0;31m[ERROR]\033[0m");
   } break;
   }
   fprintf(logger.output, " %s\n", str);
@@ -59,13 +59,13 @@ void logger_log_with_severity_location(logger_t logger, location_t loc,
     return;
   switch (severity) {
   case SEV_INFO: {
-    fprintf(logger.output, "[INFO]");
+    fprintf(logger.output, "\033[0;32m[INFO]\033[0m");
   } break;
   case SEV_WARN: {
-    fprintf(logger.output, "[WARNING]");
+    fprintf(logger.output, "\033[0;35m[WARNING]\033[0m");
   } break;
   case SEV_ERRO: {
-    fprintf(logger.output, "[ERROR]");
+    fprintf(logger.output, "\033[0;31m[ERROR]\033[0m");
   } break;
   }
   fprintf(logger.output, " ");

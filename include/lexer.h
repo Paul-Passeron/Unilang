@@ -36,5 +36,6 @@ char peek_char(lexer_t l);
 char peek_n_chars(lexer_t l, size_t n);
 bool is_end_of_file(lexer_t l);
 bool step_lexer(lexer_t *l);
+void lex_program(lexer_t *l);
 
 #endif // LEXER_H

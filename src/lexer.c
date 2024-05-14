@@ -351,3 +351,9 @@ bool step_lexer(lexer_t *l) {
   }
   }
 }
+
+void lex_program(lexer_t *l) {
+  while (step_lexer(l))
+    ;
+  ul_logger_info("File successfully lexed");
+}

@@ -1,4 +1,4 @@
-// Marie je t'aime
+// Simple hello world example in Unilang
 
 let main(): void => {
   print("Hello, World !\n");
