@@ -128,7 +128,7 @@ ast_t parse_leaf(parser_t *p) {
   if (tok.kind == T_OPENPAREN) {
     consume_parser(p);
     res = parse_expression(p);
-    expect(*p, T_OPENPAREN);
+    expect(*p, T_CLOSEPAREN);
     consume_parser(p);
   }
   if (is_funcall(*p)) {
@@ -185,9 +185,17 @@ ast_t parse_strlit(parser_t *p) {
   return new_strlit(tok.lexeme);
 }
 ast_t parse_numlit(parser_t *p) {
-  (void)p;
-  ul_assert(false, "parse_numlit not implemented yet !");
-  return NULL;
+  expect(*p, T_NUMLIT);
+  token_t tok = consume_parser(p);
+  char *tmp = tok.lexeme;
+  bool has_point = false;
+  while (*tmp) {
+    if (*(tmp++) == '.') {
+      has_point = true;
+      break;
+    }
+  }
+  return new_numlit(tok.lexeme, has_point);
 }
 ast_t parse_charlit(parser_t *p) {
   (void)p;
@@ -196,9 +204,12 @@ ast_t parse_charlit(parser_t *p) {
 }
 
 ast_t parse_fundef_param(parser_t *p) {
-  (void)p;
-  ul_assert(false, "parse_fundef_param not implemented yet !");
-  return NULL;
+  expect(*p, T_WORD);
+  token_t tok = consume_parser(p);
+  expect(*p, T_COLON);
+  consume_parser(p);
+  ast_t type = parse_identifier(p);
+  return new_fundef_param(type, tok.lexeme);
 }
 
 ast_t parse_fundef(parser_t *p) {
@@ -306,8 +317,14 @@ ast_t parse_statement(parser_t *p) {
     return parse_fundef(p);
   }
   if (streq(tok.lexeme, "let")) {
+
+    ul_logger_info_location(peek_parser(*p).location,
+                            "Parsing current statement as vardef");
     return parse_vardef(p);
   }
+
+  ul_logger_info_location(peek_parser(*p).location,
+                          "Parsing current statement as expression statement");
   ast_t expr = parse_expression(p);
 
   expect(*p, T_SEMICOLON);
@@ -317,15 +334,37 @@ ast_t parse_statement(parser_t *p) {
 }
 
 ast_t parse_compound(parser_t *p) {
-  (void)p;
-  ul_assert(false, "parse_compound is not implemented yet !");
-  return NULL;
+  ast_array_t stmts = new_ast_dyn();
+  expect(*p, T_OPENBRACE);
+  consume_parser(p);
+  while (peek_kind(*p) != T_CLOSEBRACE) {
+    ast_t stmt = parse_statement(p);
+    ul_dyn_append(&stmts, stmt);
+  }
+  expect(*p, T_CLOSEBRACE);
+  consume_parser(p);
+  return new_compound(stmts);
 }
+
 ast_t parse_ifstmt(parser_t *p) {
-  (void)p;
-  ul_assert(false, "parse_ifstmt is not implemented yet !");
-  return NULL;
+  expect_lexeme(*p, "if");
+  consume_parser(p);
+
+  ast_t cond = parse_expression(p);
+
+  expect(*p, T_BIGARR);
+  consume_parser(p);
+
+  ast_t body = parse_statement(p);
+
+  ast_t else_body = NULL;
+
+  if (streq(peek_parser(*p).lexeme, "else")) {
+    else_body = parse_statement(p);
+  }
+  return new_if(cond, body, else_body);
 }
+
 ast_t parse_returnstmt(parser_t *p) {
   (void)p;
   ul_assert(false, "parse_returnstmt is not implemented yet !");
@@ -341,8 +380,28 @@ ast_t parse_loop(parser_t *p) {
   ul_assert(false, "parse_loop is not implemented yet !");
   return NULL;
 }
+
 ast_t parse_vardef(parser_t *p) {
-  (void)p;
-  ul_assert(false, "parse_vardef is not implemented yet !");
-  return NULL;
+  expect_lexeme(*p, "let");
+  consume_parser(p);
+
+  expect(*p, T_WORD);
+  token_t tok = consume_parser(p);
+
+  char *name = tok.lexeme;
+
+  expect(*p, T_COLON);
+  consume_parser(p);
+
+  ast_t type = parse_identifier(p);
+
+  expect(*p, T_BIGARR);
+  consume_parser(p);
+
+  ast_t value = parse_expression(p);
+
+  expect(*p, T_SEMICOLON);
+  consume_parser(p);
+
+  return new_vardef(name, type, value);
 }

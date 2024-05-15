@@ -1,5 +1,13 @@
 // Simple hello world example in Unilang
 
+let print_num(a: int): void => {
+  let a: int => n / 10;
+  if (a == 0 )=>  {
+    print_num(a);
+  }
+  putchar(n%10 + '0');
+}
+
 let entry(): void => {
   print("Hello, World !\n");
  }

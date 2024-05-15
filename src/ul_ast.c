@@ -26,18 +26,28 @@ ast_t new_charlit(char content) {
 }
 
 ast_t new_numlit(char *content, bool has_point) {
-  (void)content;
-  (void)has_point;
-  ul_assert(false, "new_numlit not implemented yet !");
-  return NULL; //
+  unsigned int old_arena = get_arena();
+  ast_t res = alloc(sizeof(struct ast_struct_t), 1);
+  ast_num_lit_t *nlit = alloc(sizeof(ast_num_lit_t), 1);
+  set_arena(old_arena);
+  nlit->content = content;
+  nlit->has_point = has_point;
+  res->kind = A_NUMLIT;
+  res->as.numlit = nlit;
+  return res;
 }
 
 ast_t new_binop(token_kind_t op, ast_t left, ast_t right) {
-  (void)op;
-  (void)left;
-  (void)right;
-  ul_assert(false, "new_binop not implemented yet !");
-  return NULL; //
+  unsigned int old_arena = get_arena();
+  ast_t res = alloc(sizeof(struct ast_struct_t), 1);
+  ast_binop_t *binop = alloc(sizeof(ast_binop_t), 1);
+  set_arena(old_arena);
+  binop->op = op;
+  binop->left = left;
+  binop->right = right;
+  res->kind = A_BINOP;
+  res->as.binop = binop;
+  return res;
 }
 
 ast_t new_unary(token_kind_t op, ast_t operand, bool is_postfix) {
@@ -73,10 +83,16 @@ ast_t new_prog() {
 }
 
 ast_t new_fundef_param(ast_t type, char *name) {
-  (void)type;
-  (void)name;
-  ul_assert(false, "new_fundef_param not implemented yet !");
-  return NULL;
+  unsigned int old_arena = get_arena();
+  set_arena(parser_arena);
+  ast_t res = alloc(sizeof(struct ast_struct_t), 1);
+  ast_fundef_param_t *param = alloc(sizeof(ast_fundef_param_t), 1);
+  set_arena(old_arena);
+  param->name = name;
+  param->type = type;
+  res->kind = A_FUNDEF_PARAM;
+  res->as.fundef_param = param;
+  return res;
 }
 
 ast_t new_fundef(ast_array_t params, ast_t return_type, char *name,
@@ -124,4 +140,32 @@ ast_t new_index(ast_t value, ast_t index) {
   (void)index;
   ul_assert(false, "new_index is not implemented yet !\n");
   return NULL;
+}
+
+ast_t new_vardef(char *name, ast_t type, ast_t value) {
+  unsigned int old_arena = get_arena();
+  set_arena(parser_arena);
+  ast_t res = alloc(sizeof(struct ast_struct_t), 1);
+  ast_vardef_t *vdef = alloc(sizeof(ast_vardef_t), 1);
+  set_arena(old_arena);
+  vdef->name = name;
+  vdef->type = type;
+  vdef->value = value;
+  res->kind = A_VARDEF;
+  res->as.vardef = vdef;
+  return res;
+}
+
+ast_t new_if(ast_t condition, ast_t ifstmt, ast_t elsestmt) {
+  unsigned int old_arena = get_arena();
+  set_arena(parser_arena);
+  ast_t res = alloc(sizeof(struct ast_struct_t), 1);
+  ast_if_t *ifnode = alloc(sizeof(ast_if_t), 1);
+  set_arena(old_arena);
+  ifnode->condition = condition;
+  ifnode->ifstmt = ifstmt;
+  ifnode->elsestmt = elsestmt;
+  res->kind = A_IF;
+  res->as.ifstmt = ifnode;
+  return res;
 }

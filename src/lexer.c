@@ -92,7 +92,7 @@ bool is_whitespace(lexer_t l) {
 
 bool is_delimiter(lexer_t l) {
   char c = peek_char(l);
-  char delimiters[] = ":.{}()[];,+*-|<>!=&";
+  char delimiters[] = ":.{}()[];,+*-|<>!=&/%";
   for (size_t i = 0; i < sizeof(delimiters) - 1; i++) {
     if (c == delimiters[i])
       return true;
@@ -235,7 +235,7 @@ bool step_charlit(lexer_t *l) {
   location_t loc = l->current_loc;
   size_t current_index = 0;
   buffer[current_index++] = consume_char(l);
-  while (!is_end_of_file(*l) && !matches_string(*l, "\"") &&
+  while (!is_end_of_file(*l) && !matches_string(*l, "\'") &&
          current_index < 1024) {
     buffer[current_index++] = consume_char(l);
   }

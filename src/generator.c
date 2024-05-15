@@ -92,5 +92,4 @@ void generate_prolog() {
   char *buff;
   read_file("src/template/prologue.c", &buff, &length);
   gprintf("%s", buff);
-  // gprintf("void entry(); int main(void){\n\tentry();\n\treturn 0;\n}\n");
 }
