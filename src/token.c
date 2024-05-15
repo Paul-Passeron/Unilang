@@ -73,3 +73,30 @@ const char *token_kind_to_str(token_kind_t t) {
     return "";
   }
 }
+
+int get_precedence(token_kind_t t) {
+  switch (t) {
+  case T_MULT:
+  case T_DIV:
+  case T_MODULO:
+    return 11;
+  case T_MINUS:
+    return 10;
+  case T_PLUS:
+    return 9;
+  case T_GRTR:
+  case T_GRTR_EQ:
+  case T_LSSR:
+  case T_LSSR_EQ:
+    return 7;
+  case T_EQ:
+  case T_DIFF:
+    return 6;
+  case T_AND:
+    return 2;
+  case T_OR:
+    return 1;
+  default:
+    return -1;
+  }
+}

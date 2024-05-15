@@ -48,4 +48,6 @@ const char *token_kind_to_str(token_kind_t t);
 
 void print_token(token_t tok);
 
+int get_precedence(token_kind_t t);
+
 #endif // TOKEN_H

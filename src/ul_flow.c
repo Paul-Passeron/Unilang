@@ -1,4 +1,5 @@
 #include "../include/ul_flow.h"
+#include "../include/generator.h"
 #include "../include/lexer.h"
 #include "../include/logger.h"
 #include "../include/parser.h"
@@ -18,11 +19,19 @@ void ul_start(int argc, char **argv) {
   lexer_t l;
   new_lexer(&l, "examples/hello_world.ul");
   lex_program(&l);
+
   ul_logger_info("Starting Parser");
   parser_t p = new_parser(l.toks);
-  parse_program(&p);
-  destroy_lexer(l);
+  ast_t prog = parse_program(&p);
+  ul_logger_info("File successfully parsed");
 
+  ul_logger_info("Starting Generator");
+  set_generator_target("a.out.c");
+  generate_program(prog);
+
+  destroy_lexer(l);
+  destroy_parser(p);
+  destroy_generator();
   destroy_arena(arena);
 }
 

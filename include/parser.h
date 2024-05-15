@@ -20,6 +20,9 @@ typedef struct parser_t {
 // returns a fresh parser
 parser_t new_parser(token_array_t toks);
 
+// destroys the parser p
+void destroy_parser(parser_t p);
+
 // returns if parser does not have any more current token to peek /
 // consume
 bool is_parser_done(parser_t p);
@@ -48,5 +51,12 @@ ast_t parse_fundef(parser_t *p);
 ast_t parse_fundef_param(parser_t *p);
 ast_t parse_funcall(parser_t *p);
 ast_t parse_identifier(parser_t *p);
+ast_t parse_compound(parser_t *p);
+ast_t parse_ifstmt(parser_t *p);
+ast_t parse_returnstmt(parser_t *p);
+ast_t parse_whilestmt(parser_t *p);
+ast_t parse_loop(parser_t *p);
+ast_t parse_vardef(parser_t *p);
+ast_t parse_leaf(parser_t *p);
 
 #endif // PARSER_H

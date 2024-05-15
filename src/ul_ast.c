@@ -107,3 +107,21 @@ ast_t new_funcall(char *name, ast_array_t args) {
   res->as.funcall = funcall;
   return res;
 }
+
+ast_t new_compound(ast_array_t stmts) {
+  unsigned int old_arena = get_arena();
+  set_arena(parser_arena);
+  ast_t res = alloc(sizeof(struct ast_struct_t), 1);
+  ast_compound_t *compound = alloc(sizeof(ast_compound_t), 1);
+  set_arena(old_arena);
+  *compound = (ast_compound_t){stmts};
+  *res = (struct ast_struct_t){A_PROG, {.compound = compound}};
+  return res;
+}
+
+ast_t new_index(ast_t value, ast_t index) {
+  (void)value;
+  (void)index;
+  ul_assert(false, "new_index is not implemented yet !\n");
+  return NULL;
+}

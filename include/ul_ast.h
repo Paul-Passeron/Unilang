@@ -25,6 +25,13 @@ typedef enum ast_kind_t {
   A_FUNDEF_PARAM,
   A_FUNDEF,
   A_FUNCALL,
+  A_COMPOUND,
+  A_IF,
+  A_RETURN,
+  A_WHILE,
+  A_LOOP,
+  A_VARDEF,
+  A_INDEX,
 } ast_kind_t;
 
 // Str lit ast node
@@ -87,6 +94,44 @@ typedef struct ast_funcall_t {
   ast_array_t args;
 } ast_funcall_t;
 
+typedef struct ast_compound_t {
+  ast_array_t stmts;
+} ast_compound_t;
+
+typedef struct ast_if_t {
+  ast_t condition;
+  ast_t ifstmt;
+  ast_t elsestmt;
+} ast_if_t;
+
+typedef struct ast_return_t {
+  ast_t expr;
+} ast_return_t;
+
+typedef struct ast_while_t {
+  ast_t condition;
+  ast_t stmt;
+} ast_while_t;
+
+// loop i: 0 -> n => {}
+typedef struct ast_loop_t {
+  char *varname;
+  ast_t init;
+  ast_t end;
+  ast_t stmt;
+} ast_loop_t;
+
+typedef struct ast_vardef_t {
+  char *name;
+  ast_t type;
+  ast_t value;
+} ast_vardef_t;
+
+typedef struct ast_index_t {
+  ast_t value;
+  ast_t index;
+} ast_index_t;
+
 // union for all ast nodes
 typedef union ast_as_t {
   ast_str_lit_t *strlit;
@@ -99,6 +144,13 @@ typedef union ast_as_t {
   ast_fundef_param_t *fundef_param;
   ast_fundef_t *fundef;
   ast_funcall_t *funcall;
+  ast_compound_t *compound;
+  ast_if_t *ifstmt;
+  ast_return_t *retstmt;
+  ast_while_t *whilestmt;
+  ast_loop_t *loop;
+  ast_vardef_t *vardef;
+  ast_index_t *index;
 } ast_as_t;
 
 // Main ast struct
@@ -118,5 +170,12 @@ ast_t new_fundef_param(ast_t type, char *name);
 ast_t new_fundef(ast_array_t params, ast_t return_type, char *name,
                  ast_array_t body);
 ast_t new_funcall(char *name, ast_array_t args);
+ast_t new_compound(ast_array_t stmts);
+ast_t new_if(ast_t condition, ast_t ifstmt, ast_t elsestmt);
+ast_t new_return(ast_t expr);
+ast_t new_while(ast_t condition, ast_t stmt);
+ast_t new_loop(char *varname, ast_t init, ast_t end, ast_t stmt);
+ast_t new_vardef(char *name, ast_t type, ast_t value);
+ast_t new_index(ast_t value, ast_t index);
 
 #endif // UL_AST_H

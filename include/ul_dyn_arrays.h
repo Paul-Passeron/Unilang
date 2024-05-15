@@ -39,4 +39,9 @@ typedef __internal_dyn_array_t ast_array_t;
 #define dyn_ast_get(arr, index) ul_dyn_get(arr, index, ast_t)
 #define new_ast_dyn() new_dyn(ast_t)
 
+// NAME TABLE
+#define nt_get(arr, index) ul_dyn_get(arr, index, nt_entry_t)
+#define new_nt() new_dyn(nt_entry_t)
+#define append_nt(nt, name, kind, ref) ul_dyn_append(nt, (name_table_t){.name = name, ?kind = kind, .ref = ref})
+
 #endif // UL_DYN_ARRAYS_H
