@@ -35,6 +35,8 @@ void logger_log_with_severity(logger_t logger, const char *str,
   case SEV_ERRO: {
     fprintf(logger.output, "\033[0;31m[ERROR]\033[0m");
   } break;
+  default: // unreachable
+    return;
   }
   fprintf(logger.output, " %s\n", str);
   fflush(logger.output);
@@ -67,6 +69,8 @@ void logger_log_with_severity_location(logger_t logger, location_t loc,
   case SEV_ERRO: {
     fprintf(logger.output, "\033[0;31m[ERROR]\033[0m");
   } break;
+  default: // unreachable
+    return;
   }
   fprintf(logger.output, " ");
   print_location(logger.output, loc);

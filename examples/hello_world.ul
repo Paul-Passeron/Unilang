@@ -1,5 +1,5 @@
 // Simple hello world example in Unilang
 
-let main(): void => {
+let entry(): void => {
   print("Hello, World !\n");
  }

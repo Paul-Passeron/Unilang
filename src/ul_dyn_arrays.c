@@ -5,7 +5,7 @@
 
 #define __INTERNAL_DYN_ARRAY_INIT_CAP 16
 
-__internal_dyn_array_t __internal_new_dyn_array(size_t size) {
+__internal_dyn_array_t __internal_new_dyn_array(size_t size, int is_ptr) {
   __internal_dyn_array_t res;
   res.stride = size;
   res.length = 0;
@@ -15,7 +15,7 @@ __internal_dyn_array_t __internal_new_dyn_array(size_t size) {
   set_arena(res.arena);
   res.contents = alloc(res.capacity, 1);
   set_arena(previous_arena);
-
+  res.is_ptr = is_ptr;
   return res;
 }
 
@@ -32,18 +32,25 @@ void ul_dyn_append(__internal_dyn_array_t *arr, ...) {
   unsigned int old_arena = get_arena();
   unsigned int a = new_arena(arr->stride);
   set_arena(a);
-  char *buff = alloc(1, arr->stride);
+  char *buff = alloc_zero(arr->stride, 1);
 
-  // We suppose there is only one variadic argument
-  // maybe check for endianness ??
-  __internal_default_t t = va_arg(ptr, __internal_default_t);
-  for (size_t i = 0; i < arr->stride; ++i) {
-    buff[i] = t.contents[i];
-  }
-  va_end(ptr);
+  if (!arr->is_ptr) {
 
-  if (arr->length * arr->stride >= arr->capacity) {
-    __internal_resize_dyn_array(arr);
+    // We suppose there is only one variadic argument
+    // maybe check for endianness ??
+    __internal_default_t t = va_arg(ptr, __internal_default_t);
+    for (size_t i = 0; i < arr->stride; ++i) {
+      buff[i] = t.contents[i];
+    }
+    va_end(ptr);
+
+    if (arr->length * arr->stride >= arr->capacity) {
+      __internal_resize_dyn_array(arr);
+    }
+  } else {
+    void *tmp = va_arg(ptr, void *);
+    memcpy(buff, &tmp, sizeof(void *));
+    va_end(ptr);
   }
 
   memcpy((char *)arr->contents + arr->length * arr->stride, buff, arr->stride);

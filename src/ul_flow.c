@@ -6,18 +6,61 @@
 #include "../include/ul_allocator.h"
 #include "../include/ul_compiler_globals.h"
 #include <stdlib.h>
+#include <unistd.h>
 
 void ul_start(int argc, char **argv) {
-  (void)argc;
-  (void)argv;
+
+  logger_severity_t severity = SEV_WARN;
+  bool sev_set = false;
+
+  char *output;
+  bool output_set = false;
+
+  char *input;
+  bool input_set = false;
+
   create_logger(&ul_global_logger);
+
+  for (int i = 1; i < argc; i++) {
+    char *buff = argv[i];
+    if (*buff != '-' && !input_set) {
+      input = buff;
+      input_set = true;
+    } else if ((streq(buff, "-s") || streq(buff, "--silent")) && !sev_set) {
+      severity = SEV_SILENT;
+      sev_set = true;
+    } else if ((streq(buff, "-v") || streq(buff, "--verbose")) && !sev_set) {
+      severity = SEV_INFO;
+      sev_set = true;
+    } else if (streq(buff, "--ignore-warnings") && !sev_set) {
+      severity = SEV_ERRO;
+      sev_set = true;
+    } else if ((streq(buff, "-o") || streq(buff, "--output")) && !output_set) {
+      buff = argv[++i];
+      output = buff;
+      output_set = true;
+    }
+  }
+
+  set_logger_severity(&ul_global_logger, severity);
+
+  if (!input_set) {
+    ul_logger_erro("You must specify an input file");
+    ul_exit(1);
+  }
+
+  char default_out[] = "a.out";
+  if (!output_set) {
+    output = default_out;
+  }
+
   ul_logger_info("Started Unilang compiler");
-  unsigned int arena = new_arena(1024);
+  unsigned int arena = new_arena(2048);
   set_arena(arena);
 
   ul_logger_info("Starting Lexer");
   lexer_t l;
-  new_lexer(&l, "examples/hello_world.ul");
+  new_lexer(&l, input);
   lex_program(&l);
 
   ul_logger_info("Starting Parser");
@@ -26,12 +69,23 @@ void ul_start(int argc, char **argv) {
   ul_logger_info("File successfully parsed");
 
   ul_logger_info("Starting Generator");
-  set_generator_target("a.out.c");
+  char out[128] = {0};
+  strcpy(out, output);
+  strcat(out, ".c");
+  set_generator_target(out);
   generate_program(prog);
+  ul_logger_info("File successfully generated");
+  destroy_generator();
+
+  char command[256];
+  sprintf(command, "/usr/bin/gcc -o %s %s", output, out);
+  system(command);
+  char info[270] = {0};
+  sprintf(info, "[CMD] %s", command);
+  ul_logger_info(info);
 
   destroy_lexer(l);
   destroy_parser(p);
-  destroy_generator();
   destroy_arena(arena);
 }
 

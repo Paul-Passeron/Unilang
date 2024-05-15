@@ -17,6 +17,9 @@ void set_generator_target(const char *target);
 void destroy_generator(void);
 
 void generate_program(ast_t prog);
+void generate_prolog();
 void generate_statement(ast_t stmt);
+void generate_expression(ast_t stmt);
+void generate_expression_with_type(ast_t stmt, ast_t type);
 
 #endif // GENERATOR_H

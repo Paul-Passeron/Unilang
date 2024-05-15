@@ -8,6 +8,7 @@ typedef enum logger_severity_t {
   SEV_INFO,
   SEV_WARN,
   SEV_ERRO,
+  SEV_SILENT
 } logger_severity_t;
 
 typedef struct logger_t {
