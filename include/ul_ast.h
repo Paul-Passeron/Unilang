@@ -178,4 +178,6 @@ ast_t new_loop(char *varname, ast_t init, ast_t end, ast_t stmt);
 ast_t new_vardef(char *name, ast_t type, ast_t value);
 ast_t new_index(ast_t value, ast_t index);
 
+const char *ast_kind_to_str(ast_kind_t kind);
+
 #endif // UL_AST_H

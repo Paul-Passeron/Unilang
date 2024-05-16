@@ -79,6 +79,7 @@ ast_t new_prog() {
   ast_array_t arr = new_ast_dyn();
   *prog = (ast_prog_t){arr};
   *res = (struct ast_struct_t){A_PROG, {.prog = prog}};
+  ul_logger_warn("This warning should only appear once");
   return res;
 }
 
@@ -131,7 +132,7 @@ ast_t new_compound(ast_array_t stmts) {
   ast_compound_t *compound = alloc(sizeof(ast_compound_t), 1);
   set_arena(old_arena);
   *compound = (ast_compound_t){stmts};
-  *res = (struct ast_struct_t){A_PROG, {.compound = compound}};
+  *res = (struct ast_struct_t){A_COMPOUND, {.compound = compound}};
   return res;
 }
 
@@ -168,4 +169,45 @@ ast_t new_if(ast_t condition, ast_t ifstmt, ast_t elsestmt) {
   res->kind = A_IF;
   res->as.ifstmt = ifnode;
   return res;
+}
+
+const char *ast_kind_to_str(ast_kind_t kind) {
+  switch (kind) {
+  case A_STRLIT:
+    return "A_STRLIT";
+  case A_CHARLIT:
+    return "A_CHARLIT";
+  case A_NUMLIT:
+    return "A_NUMLIT";
+  case A_BINOP:
+    return "A_BINOP";
+  case A_UNARY:
+    return "A_UNARY";
+  case A_IDEN:
+    return "A_IDEN";
+  case A_PROG:
+    return "A_PROG";
+  case A_FUNDEF_PARAM:
+    return "A_FUNDEF_PARAM";
+  case A_FUNDEF:
+    return "A_FUNDEF";
+  case A_FUNCALL:
+    return "A_FUNCALL";
+  case A_COMPOUND:
+    return "A_COMPOUND";
+  case A_IF:
+    return "A_IF";
+  case A_RETURN:
+    return "A_RETURN";
+  case A_WHILE:
+    return "A_WHILE";
+  case A_LOOP:
+    return "A_LOOP";
+  case A_VARDEF:
+    return "A_VARDEF";
+  case A_INDEX:
+    return "A_INDEX";
+  default:
+    return "";
+  }
 }

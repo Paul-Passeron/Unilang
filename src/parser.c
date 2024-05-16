@@ -226,11 +226,11 @@ ast_t parse_fundef(parser_t *p) {
 
   while (peek_kind(*p) != T_CLOSEPAREN) {
     ast_t param = parse_fundef_param(p);
+    ul_dyn_append(&params, param);
     if (peek_kind(*p) == T_CLOSEPAREN)
       break;
     expect(*p, T_COMMA);
     consume_parser(p);
-    ul_dyn_append(&params, param);
   }
 
   expect(*p, T_CLOSEPAREN);

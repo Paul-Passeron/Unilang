@@ -78,9 +78,23 @@ void ul_start(int argc, char **argv) {
   destroy_generator();
 
   char command[256];
+  char info[270] = {0};
+
+  ul_logger_info("Formatting transpiled C code");
+  sprintf(command, "clang-format -i %s", out);
+  system(command);
+  sprintf(info, "[CMD] %s", command);
+  ul_logger_info(info);
+
+  sprintf(command, "sed -i \'/^$/d\' %s", out);
+  system(command);
+  sprintf(info, "[CMD] %s", command);
+  ul_logger_info(info);
+
+  ul_logger_info("Compiling transpiled C code with gcc");
+
   sprintf(command, "/usr/bin/gcc -o %s %s", output, out);
   system(command);
-  char info[270] = {0};
   sprintf(info, "[CMD] %s", command);
   ul_logger_info(info);
 
@@ -90,6 +104,7 @@ void ul_start(int argc, char **argv) {
 }
 
 void ul_exit(unsigned char exit_code) {
+  destroy_generator();
   clear_allocator();
   ul_destroy_logger();
   exit(exit_code);
