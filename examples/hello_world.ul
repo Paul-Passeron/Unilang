@@ -1,31 +1,8 @@
 // Simple hello world example in Unilang
 
-let print_num(n: int): void => {
-  let a: int => n / 10;
-  if (a != 0 )=>  {
-    print_num(a);
-  }
-  putchar(n%10 + '0');
-}
+@include "stdlib.ul"
 
 let entry(): void => {
-
-  if(1+2*3 != 7) => {
-    print("Error\n");
-  } else {
-    print("Passed\n");
-  }
-
-  if(4/2+3 != 5) => {
-    print("Error\n");
-  } else {
-    print("Passed\n");
-  }
-
-  if(10%3 != 1) => {
-    print("Error\n");
-  } else {
-    print("Passed\n");
-  }
-
+  print_num(12345);
+  print("\n");
  }

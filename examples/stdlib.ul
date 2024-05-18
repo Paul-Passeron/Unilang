@@ -1,0 +1,20 @@
+/**
+ * stdlib.ul
+ * Copyright (C) Paul Passeron
+ * Unilang Standard Library
+ * Paul Passeron <paul.passeron2@gmail.com>
+**/
+
+/**
+ * print_num - Prints a number on the standard output
+ * @n: The numnber to print
+ * @return: void
+**/
+let print_num(n: i32): void => {
+  let a: i32 => n / 10;
+  if (a != 0 )=>  {
+    print_num(a);
+  }
+  putchar(n%10 + '0');
+}
+

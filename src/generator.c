@@ -44,6 +44,18 @@ const type_t I16_TYPE = {.name = "i16",
                          .kind = TY_PRIMITIVE,
                          .is_signed = true};
 
+const type_t U32_TYPE = {.name = "u32",
+                         .is_builtin = true,
+                         .size = 4,
+                         .kind = TY_PRIMITIVE,
+                         .is_signed = false};
+
+const type_t I32_TYPE = {.name = "i32",
+                         .is_builtin = true,
+                         .size = 4,
+                         .kind = TY_PRIMITIVE,
+                         .is_signed = true};
+
 void set_generator_target(const char *target) {
   FILE *f = fopen(target, "w");
   if (f == NULL) {
@@ -56,6 +68,8 @@ void set_generator_target(const char *target) {
   ul_dyn_append(&generator.types, I8_TYPE);
   ul_dyn_append(&generator.types, U16_TYPE);
   ul_dyn_append(&generator.types, I16_TYPE);
+  ul_dyn_append(&generator.types, U32_TYPE);
+  ul_dyn_append(&generator.types, I32_TYPE);
   generator.target = f;
 }
 

@@ -14,6 +14,7 @@ typedef enum lexer_state_t {
   LS_NUM_LIT,
   LS_WORD,
   LS_DELIMITER,
+  LS_INCLUDE,
 } lexer_state_t;
 
 const char *lexer_state_to_str(lexer_state_t state);
@@ -23,13 +24,13 @@ typedef struct lexer_t {
   size_t buffer_length;
   size_t buffer_index;
   location_t current_loc;
-  const char *filename;
+  char *filename;
   lexer_state_t state;
   token_array_t toks;
   unsigned int arena;
 } lexer_t;
 
-void new_lexer(lexer_t *l, const char *path);
+void new_lexer(lexer_t *l, char *path);
 void destroy_lexer(lexer_t l);
 char consume_char(lexer_t *l);
 char peek_char(lexer_t l);

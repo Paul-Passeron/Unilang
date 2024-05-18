@@ -5,8 +5,13 @@
 #include "../include/parser.h"
 #include "../include/ul_allocator.h"
 #include "../include/ul_compiler_globals.h"
+#include <linux/limits.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+str_array_t included_files;
+
+unsigned int inc_arena;
 
 void ul_start(int argc, char **argv) {
 
@@ -57,6 +62,9 @@ void ul_start(int argc, char **argv) {
   ul_logger_info("Started Unilang compiler");
   unsigned int arena = new_arena(2048);
   set_arena(arena);
+
+  included_files = new_str_dyn();
+  inc_arena = new_arena(1024 * PATH_MAX);
 
   ul_logger_info("Starting Lexer");
   lexer_t l;
