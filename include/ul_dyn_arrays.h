@@ -30,6 +30,8 @@ void ul_dyn_destroy(__internal_dyn_array_t arr);
 
 size_t ul_dyn_length(__internal_dyn_array_t arr);
 
+void ul_dyn_destroy_last(__internal_dyn_array_t *arr);
+
 // TOKEN
 typedef __internal_dyn_array_t token_array_t;
 #define dyn_tok_get(arr, index) ul_dyn_get(arr, index, token_t)
@@ -44,9 +46,15 @@ typedef __internal_dyn_array_t ast_array_t;
 #define nt_get(arr, index) ul_dyn_get(arr, index, nt_entry_t)
 #define new_nt() new_dyn(nt_entry_t, false)
 #define append_nt(nt, name, kind, ref) ul_dyn_append(nt, (name_table_t){.name = name, ?kind = kind, .ref = ref})
+
 // String
 typedef __internal_dyn_array_t str_array_t;
 #define dyn_str_get(arr, index) ul_dyn_get(arr, index, char *)
 #define new_str_dyn() new_dyn(char *, true)
+
+// TYPE
+typedef __internal_dyn_array_t type_array_t;
+#define dyn_type_get(arr, index) ul_dyn_get(arr, index, type_t)
+#define new_type_dyn() new_dyn(type_t, false)
 
 #endif // UL_DYN_ARRAYS_H

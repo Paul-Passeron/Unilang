@@ -360,6 +360,7 @@ ast_t parse_ifstmt(parser_t *p) {
   ast_t else_body = NULL;
 
   if (streq(peek_parser(*p).lexeme, "else")) {
+    consume_parser(p);
     else_body = parse_statement(p);
   }
   return new_if(cond, body, else_body);

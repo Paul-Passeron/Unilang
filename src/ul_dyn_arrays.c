@@ -82,3 +82,8 @@ void *__internal_dyn_get(__internal_dyn_array_t arr, size_t index) {
 }
 
 size_t ul_dyn_length(__internal_dyn_array_t arr) { return arr.length; }
+
+void ul_dyn_destroy_last(__internal_dyn_array_t *arr) {
+  arr->length--;
+  memset((char *)arr->contents + arr->length * arr->stride, 0, arr->stride);
+}

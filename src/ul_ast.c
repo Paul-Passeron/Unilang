@@ -79,7 +79,6 @@ ast_t new_prog() {
   ast_array_t arr = new_ast_dyn();
   *prog = (ast_prog_t){arr};
   *res = (struct ast_struct_t){A_PROG, {.prog = prog}};
-  ul_logger_warn("This warning should only appear once");
   return res;
 }
 

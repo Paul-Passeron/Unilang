@@ -9,7 +9,23 @@ let print_num(n: int): void => {
 }
 
 let entry(): void => {
-  print("Hello, World !\n");
-  print_num(123456789);
-  print("\n");
+
+  if(1+2*3 != 7) => {
+    print("Error\n");
+  } else {
+    print("Passed\n");
+  }
+
+  if(4/2+3 != 5) => {
+    print("Error\n");
+  } else {
+    print("Passed\n");
+  }
+
+  if(10%3 != 1) => {
+    print("Error\n");
+  } else {
+    print("Passed\n");
+  }
+
  }
