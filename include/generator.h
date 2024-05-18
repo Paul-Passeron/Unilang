@@ -6,10 +6,13 @@
 #ifndef GENERATOR_H
 #define GENERATOR_H
 #include "ul_ast.h"
+#include "ul_dyn_arrays.h"
+#include "ul_types.h"
 #include <stdio.h>
 
 typedef struct generator_t {
   FILE *target;
+  type_array_t types;
 } generator_t;
 
 void set_generator_target(const char *target);

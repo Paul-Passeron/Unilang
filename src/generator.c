@@ -4,6 +4,7 @@
 #include "../include/generator.h"
 #include "../include/logger.h"
 #include "../include/ul_assert.h"
+#include "../include/ul_compiler_globals.h"
 #include "../include/ul_flow.h"
 #include "../include/ul_io.h"
 
@@ -11,13 +12,63 @@ generator_t generator;
 
 #define gprintf(...) fprintf(generator.target, __VA_ARGS__)
 
+// Create builtin types
+
+const type_t U8_TYPE = {.name = "u8",
+                        .is_builtin = true,
+                        .size = 1,
+                        .kind = TY_PRIMITIVE,
+                        .is_signed = false};
+
+const type_t I8_TYPE = {.name = "i8",
+                        .is_builtin = true,
+                        .size = 1,
+                        .kind = TY_PRIMITIVE,
+                        .is_signed = true};
+
+const type_t CHAR_TYPE = {.name = "char",
+                          .is_builtin = true,
+                          .size = 1,
+                          .kind = TY_PRIMITIVE,
+                          .is_signed = true};
+
+const type_t U16_TYPE = {.name = "u16",
+                         .is_builtin = true,
+                         .size = 2,
+                         .kind = TY_PRIMITIVE,
+                         .is_signed = false};
+
+const type_t I16_TYPE = {.name = "i16",
+                         .is_builtin = true,
+                         .size = 2,
+                         .kind = TY_PRIMITIVE,
+                         .is_signed = true};
+
 void set_generator_target(const char *target) {
   FILE *f = fopen(target, "w");
   if (f == NULL) {
     ul_logger_erro("Could not set generator to target...");
     ul_exit(1);
   }
+  generator.types = new_type_dyn();
+  ul_dyn_append(&generator.types, CHAR_TYPE);
+  ul_dyn_append(&generator.types, U8_TYPE);
+  ul_dyn_append(&generator.types, I8_TYPE);
+  ul_dyn_append(&generator.types, U16_TYPE);
+  ul_dyn_append(&generator.types, I16_TYPE);
   generator.target = f;
+}
+
+type_t get_type_by_name(const char *name, bool *found) {
+  *found = false;
+  for (size_t i = 0; i < ul_dyn_length(generator.types); i++) {
+    type_t t = dyn_type_get(generator.types, i);
+    if (streq(t.name, name)) {
+      *found = true;
+      return t;
+    }
+  }
+  return (type_t){0};
 }
 
 void destroy_generator(void) {
@@ -25,11 +76,11 @@ void destroy_generator(void) {
     return;
   fclose(generator.target);
   generator.target = NULL;
+  ul_dyn_destroy(generator.types);
 }
 
 void generate_program(ast_t prog) {
   ul_logger_info("Generating Program");
-
   generate_prolog();
   ast_array_t contents = prog->as.prog->prog;
   for (size_t i = 0; i < ul_dyn_length(contents); i++) {

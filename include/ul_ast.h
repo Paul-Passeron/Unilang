@@ -8,6 +8,7 @@
 
 #include "token.h"
 #include "ul_dyn_arrays.h"
+#include "ul_types.h"
 #include <stdbool.h>
 
 // Main ast type
@@ -131,6 +132,10 @@ typedef struct ast_index_t {
   ast_t value;
   ast_t index;
 } ast_index_t;
+
+typedef struct ast_tdef_t {
+  type_t type;
+} ast_tdef_t;
 
 // union for all ast nodes
 typedef union ast_as_t {
