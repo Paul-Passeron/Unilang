@@ -261,9 +261,16 @@ char *__UL_string_to_cstr(string s) { return s.contents; }
 #define __UL_char_to_string(c)                                                 \
   (string) { .contents = &c, .length = 1, .arena = 0 }
 
-void __UL_print(string s);
-
-void __UL_putchar(char c);
+string __UL_new_string(u32 count) {
+  string res;
+  unsigned int old_arena = get_arena();
+  res.arena = new_arena(count + 1);
+  set_arena(res.arena);
+  res.contents = alloc_zero(count + 1, 1);
+  res.length = count;
+  set_arena(old_arena);
+  return res;
+}
 
 void __UL_entry();
 

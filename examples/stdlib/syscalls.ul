@@ -17,3 +17,10 @@
 let write(fd: i32, buf: cstr, count: u64): i64 => {
   return syscall3(1, fd, buf, count);
 }
+
+
+let read(fd: i32, count: u64): string => {
+  let s: string => new_string(count);
+  syscall3(0, fd, s.contents, count);
+  return s;
+}
