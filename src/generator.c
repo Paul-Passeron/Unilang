@@ -70,6 +70,24 @@ const type_t I64_TYPE = {.name = "i64",
                          .kind = TY_PRIMITIVE,
                          .is_signed = true};
 
+const type_t VOID_TYPE = {.name = "void",
+                          .is_builtin = true,
+                          .size = 0,
+                          .kind = TY_PRIMITIVE,
+                          .is_signed = false};
+
+const type_t STRING_TYPE = {.name = "string",
+                            .is_builtin = true,
+                            .size = 24,
+                            .kind = TY_PRIMITIVE,
+                            .is_signed = false};
+
+const type_t CSTR_TYPE = {.name = "cstr",
+                          .is_builtin = true,
+                          .size = 8,
+                          .kind = TY_PRIMITIVE,
+                          .is_signed = false};
+
 void set_generator_target(const char *target) {
   FILE *f = fopen(target, "w");
   if (f == NULL) {
@@ -87,7 +105,11 @@ void set_generator_target(const char *target) {
   ul_dyn_append(&generator.context.types, I32_TYPE);
   ul_dyn_append(&generator.context.types, U64_TYPE);
   ul_dyn_append(&generator.context.types, I64_TYPE);
+  ul_dyn_append(&generator.context.types, VOID_TYPE);
+  ul_dyn_append(&generator.context.types, STRING_TYPE);
+  ul_dyn_append(&generator.context.types, CSTR_TYPE);
   generator.target = f;
+  generator.failed = false;
 }
 
 type_t get_type_by_name(const char *name, bool *found) {
@@ -121,6 +143,8 @@ void destroy_generator(void) {
   ul_dyn_destroy(generator.context.types);
 }
 
+bool has_failed(void) { return generator.failed; }
+
 void generate_program(ast_t prog) {
   ul_logger_info("Generating Program");
   generate_prolog();
@@ -133,7 +157,16 @@ void generate_program(ast_t prog) {
 }
 
 void generate_type(ast_t type) {
-
+  bool found = false;
+  char *name = type->as.iden->content;
+  type_t t = get_type_by_name(name, &found);
+  (void)t;
+  if (!found) {
+    char msg[128];
+    sprintf(msg, "Type %s has not been defined...", name);
+    ul_logger_erro_location(type->loc, msg);
+    generator.failed = true;
+  }
   if (type->kind == A_IDEN) {
     gprintf("%s", type->as.iden->content);
   }
@@ -272,6 +305,22 @@ void generate_if(ast_t ifstmt) {
   }
 }
 
+void generate_access(ast_t access) {
+  ast_access_t a = *access->as.access;
+  generate_expression(a.object);
+  // Should do some checks here
+  gprintf(".%s", a.field->as.iden->content);
+}
+
+void generate_index(ast_t index) {
+  ast_index_t i = *index->as.index;
+  gprintf("(");
+  generate_expression(i.value);
+  gprintf(").contents[");
+  generate_expression(i.index);
+  gprintf("]");
+}
+
 void generate_expression(ast_t stmt) {
   ul_logger_info("Generating Expression");
   switch (stmt->kind) {
@@ -297,6 +346,14 @@ void generate_expression(ast_t stmt) {
   }
   case A_NUMLIT: {
     generate_numlit(stmt);
+    return;
+  }
+  case A_ACCESS: {
+    generate_access(stmt);
+    return;
+  }
+  case A_INDEX: {
+    generate_index(stmt);
     return;
   }
   default:

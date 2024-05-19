@@ -36,6 +36,8 @@ bool is_parser_done(parser_t p) {
   return p.current_index >= ul_dyn_length(p.toks);
 }
 
+location_t peek_loc(parser_t p) { return peek_parser(p).location; }
+
 void expect(parser_t p, token_kind_t kind) {
   ul_assert(!is_parser_done(p),
             "Could not expect as the end of the tokens was reached");
@@ -77,7 +79,7 @@ bool matches_lexeme(parser_t p, const char *lexeme) {
 
 // TODO: handle including files
 ast_t parse_program(parser_t *p) {
-  ast_t prog = new_prog();
+  ast_t prog = new_prog(peek_loc(*p));
   while (!is_parser_done(*p)) {
     ast_t stmt = parse_statement(p);
     ul_dyn_append(&prog->as.prog->prog, stmt);
@@ -125,6 +127,7 @@ bool is_funcall(parser_t p) {
 ast_t parse_leaf(parser_t *p) {
   ast_t res = NULL;
   token_t tok = peek_parser(*p);
+  location_t loc = peek_loc(*p);
   if (tok.kind == T_OPENPAREN) {
     ul_logger_info_location(tok.location, "parsing leaf as paren expression");
     consume_parser(p);
@@ -137,6 +140,12 @@ ast_t parse_leaf(parser_t *p) {
   } else if (tok.kind == T_WORD) {
     ul_logger_info_location(tok.location, "parsing leaf as identifier");
     res = parse_identifier(p);
+    while (peek_kind(*p) == T_DOT) {
+      location_t loc = peek_loc(*p);
+      consume_parser(p);
+      ast_t f = parse_identifier(p);
+      res = new_access(loc, res, f);
+    }
   } else if (tok.kind == T_STRLIT) {
     ul_logger_info_location(tok.location, "parsing leaf as strlit");
     res = parse_strlit(p);
@@ -157,7 +166,7 @@ ast_t parse_leaf(parser_t *p) {
   ast_t expr = parse_expression(p);
   expect(*p, T_CLOSEBRACKET);
   consume_parser(p);
-  return new_index(res, expr);
+  return new_index(loc, res, expr);
 }
 
 bool is_kind_op(token_kind_t t) { return get_precedence(t) != -1; }
@@ -166,6 +175,8 @@ ast_t parse_expression_aux(parser_t *p, int min_prec) {
   ast_t left = parse_leaf(p);
   while (true) {
     token_kind_t lookahead = peek_kind(*p);
+    location_t loc = peek_loc(*p);
+
     if (!is_kind_op(lookahead))
       break;
     int op_prec = get_precedence(lookahead);
@@ -173,26 +184,30 @@ ast_t parse_expression_aux(parser_t *p, int min_prec) {
       break;
     consume_parser(p);
     ast_t right = parse_expression_aux(p, op_prec);
-    left = new_binop(lookahead, left, right);
+    left = new_binop(loc, lookahead, left, right);
   }
   return left;
 }
 
 ast_t parse_identifier(parser_t *p) {
   expect(*p, T_WORD);
-  return new_iden(consume_parser(p).lexeme);
+  location_t loc = peek_loc(*p);
+  return new_iden(loc, consume_parser(p).lexeme);
 }
 
 ast_t parse_expression(parser_t *p) { return parse_expression_aux(p, -1); }
 
 ast_t parse_strlit(parser_t *p) {
   expect(*p, T_STRLIT);
+  location_t loc = peek_loc(*p);
   token_t tok = consume_parser(p);
 
-  return new_strlit(tok.lexeme);
+  return new_strlit(loc, tok.lexeme);
 }
+
 ast_t parse_numlit(parser_t *p) {
   expect(*p, T_NUMLIT);
+  location_t loc = peek_loc(*p);
   token_t tok = consume_parser(p);
   char *tmp = tok.lexeme;
   bool has_point = false;
@@ -202,27 +217,30 @@ ast_t parse_numlit(parser_t *p) {
       break;
     }
   }
-  return new_numlit(tok.lexeme, has_point);
+  return new_numlit(loc, tok.lexeme, has_point);
 }
 ast_t parse_charlit(parser_t *p) {
   expect(*p, T_CHARLIT);
+  location_t loc = peek_loc(*p);
   token_t tok = consume_parser(p);
-  return new_charlit(tok.lexeme);
+  return new_charlit(loc, tok.lexeme);
 }
 
 ast_t parse_fundef_param(parser_t *p) {
   expect(*p, T_WORD);
+  location_t loc = peek_loc(*p);
   token_t tok = consume_parser(p);
   expect(*p, T_COLON);
   consume_parser(p);
   ast_t type = parse_identifier(p);
-  return new_fundef_param(type, tok.lexeme);
+  return new_fundef_param(loc, type, tok.lexeme);
 }
 
 ast_t parse_fundef(parser_t *p) {
   // let <name>([params])
 
   expect_lexeme(*p, "let");
+  location_t loc = peek_loc(*p);
   consume_parser(p);
 
   token_t tok = consume_parser(p);
@@ -262,11 +280,12 @@ ast_t parse_fundef(parser_t *p) {
   expect(*p, T_CLOSEBRACE);
   consume_parser(p);
 
-  return new_fundef(params, ret_type, tok.lexeme, body);
+  return new_fundef(loc, params, ret_type, tok.lexeme, body);
 }
 
 ast_t parse_funcall(parser_t *p) {
   expect(*p, T_WORD);
+  location_t loc = peek_loc(*p);
   token_t tok = consume_parser(p);
 
   expect(*p, T_OPENPAREN);
@@ -286,7 +305,7 @@ ast_t parse_funcall(parser_t *p) {
   expect(*p, T_CLOSEPAREN);
   consume_parser(p);
 
-  return new_funcall(tok.lexeme, args);
+  return new_funcall(loc, tok.lexeme, args);
 }
 
 ast_t parse_statement(parser_t *p) {
@@ -343,6 +362,7 @@ ast_t parse_statement(parser_t *p) {
 ast_t parse_compound(parser_t *p) {
   ast_array_t stmts = new_ast_dyn();
   expect(*p, T_OPENBRACE);
+  location_t loc = peek_loc(*p);
   consume_parser(p);
   while (peek_kind(*p) != T_CLOSEBRACE) {
     ast_t stmt = parse_statement(p);
@@ -350,11 +370,13 @@ ast_t parse_compound(parser_t *p) {
   }
   expect(*p, T_CLOSEBRACE);
   consume_parser(p);
-  return new_compound(stmts);
+  return new_compound(loc, stmts);
 }
 
 ast_t parse_ifstmt(parser_t *p) {
   expect_lexeme(*p, "if");
+  location_t loc = peek_loc(*p);
+
   consume_parser(p);
 
   ast_t cond = parse_expression(p);
@@ -370,16 +392,18 @@ ast_t parse_ifstmt(parser_t *p) {
     consume_parser(p);
     else_body = parse_statement(p);
   }
-  return new_if(cond, body, else_body);
+  return new_if(loc, cond, body, else_body);
 }
 
 ast_t parse_returnstmt(parser_t *p) {
   expect_lexeme(*p, "return");
+  location_t loc = peek_loc(*p);
+
   consume_parser(p);
   ast_t expr = parse_expression(p);
   expect(*p, T_SEMICOLON);
   consume_parser(p);
-  return new_return(expr);
+  return new_return(loc, expr);
 }
 ast_t parse_whilestmt(parser_t *p) {
   (void)p;
@@ -388,6 +412,8 @@ ast_t parse_whilestmt(parser_t *p) {
 }
 ast_t parse_loop(parser_t *p) {
   expect_lexeme(*p, "loop");
+  location_t loc = peek_loc(*p);
+
   consume_parser(p);
   expect(*p, T_WORD);
   char *varname = consume_parser(p).lexeme;
@@ -408,11 +434,13 @@ ast_t parse_loop(parser_t *p) {
   expect(*p, T_BIGARR);
   consume_parser(p);
   ast_t body = parse_statement(p);
-  return new_loop(varname, init, end, body, is_strict);
+  return new_loop(loc, varname, init, end, body, is_strict);
 }
 
 ast_t parse_vardef(parser_t *p) {
   expect_lexeme(*p, "let");
+  location_t loc = peek_loc(*p);
+
   consume_parser(p);
 
   expect(*p, T_WORD);
@@ -433,5 +461,5 @@ ast_t parse_vardef(parser_t *p) {
   expect(*p, T_SEMICOLON);
   consume_parser(p);
 
-  return new_vardef(name, type, value);
+  return new_vardef(loc, name, type, value);
 }

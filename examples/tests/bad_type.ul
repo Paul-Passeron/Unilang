@@ -1,0 +1,10 @@
+let foo(): bad_type => {
+}
+
+let bar(arg: n): void => {
+
+}
+
+let baz(): void => {
+  let var: efefeq => 0;
+}

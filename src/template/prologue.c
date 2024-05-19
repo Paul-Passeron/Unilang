@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 
 typedef char i8;
 typedef unsigned char u8;
@@ -13,6 +15,7 @@ typedef unsigned int u32;
 typedef int i32;
 typedef unsigned long u64;
 typedef unsigned long i64;
+typedef char *cstr;
 
 void __UL_exit(u8 exit_code);
 
@@ -244,21 +247,23 @@ string __internal_cstr_to_string(const char *contents) {
   if (l == 0)
     return (string){0};
   unsigned int old_arena = get_arena();
-  unsigned int arena = new_arena(l);
+  unsigned int arena = new_arena(l + 1);
   set_arena(arena);
-  char *str = alloc(l, 1);
+  char *str = alloc(l + 1, 1);
   memcpy(str, contents, l);
+  str[l] = 0;
   set_arena(old_arena);
   return (string){.contents = str, .length = l, .arena = arena};
 }
 
-void __UL_print(string s) {
-  for (size_t i = 0; i < s.length; ++i) {
-    putchar(s.contents[i]);
-  }
-}
+char *__UL_string_to_cstr(string s) { return s.contents; }
 
-void __UL_putchar(char c) { putchar(c); }
+#define __UL_char_to_string(c)                                                 \
+  (string) { .contents = &c, .length = 1, .arena = 0 }
+
+void __UL_print(string s);
+
+void __UL_putchar(char c);
 
 void __UL_entry();
 
@@ -267,11 +272,19 @@ void __UL_exit(u8 exit_code) {
   ul_destroy_logger();
 }
 
+#define __UL_syscall1(num, arg) syscall(num, arg)
+#define __UL_syscall2(num, arg1, arg2) syscall(num, arg1, arg2)
+#define __UL_syscall3(num, arg1, arg2, arg3) syscall(num, arg1, arg2, arg3)
+#define __UL_syscall4(num, arg1, arg2, arg3, arg4)                             \
+  syscall(num, arg1, arg2, arg3, arg4)
+#define __UL_syscall5(num, arg1, arg2, arg3, arg4, arg5)                       \
+  syscall(num, arg1, arg2, arg3, arg4, arg5)
+
 int main(void) {
   create_logger(&ul_global_logger);
   set_logger_severity(&ul_global_logger, SEV_WARN);
   set_logger_output(&ul_global_logger, stderr);
-  unsigned int default_arena = new_arena(1024);
+  unsigned int default_arena = new_arena(32);
   set_arena(default_arena);
   __UL_entry();
   __UL_exit(0);

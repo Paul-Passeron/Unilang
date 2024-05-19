@@ -14,6 +14,7 @@
 typedef struct generator_t {
   FILE *target;
   context_t context;
+  bool failed;
 } generator_t;
 
 void set_generator_target(const char *target);
@@ -25,5 +26,6 @@ void generate_prolog();
 void generate_statement(ast_t stmt);
 void generate_expression(ast_t stmt);
 void generate_expression_with_type(ast_t stmt, ast_t type);
+bool has_failed(void);
 
 #endif // GENERATOR_H

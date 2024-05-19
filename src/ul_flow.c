@@ -82,29 +82,34 @@ void ul_start(int argc, char **argv) {
   strcat(out, ".c");
   set_generator_target(out);
   generate_program(prog);
-  ul_logger_info("File successfully generated");
-  destroy_generator();
+  if (!has_failed()) {
 
-  char command[256];
-  char info[270] = {0};
+    ul_logger_info("File successfully generated");
+    destroy_generator();
 
-  ul_logger_info("Formatting transpiled C code");
-  sprintf(command, "clang-format -i %s", out);
-  system(command);
-  sprintf(info, "[CMD] %s", command);
-  ul_logger_info(info);
+    char command[256];
+    char info[270] = {0};
 
-  sprintf(command, "sed -i \'/^$/d\' %s", out);
-  system(command);
-  sprintf(info, "[CMD] %s", command);
-  ul_logger_info(info);
+    ul_logger_info("Formatting transpiled C code");
+    sprintf(command, "clang-format -i %s", out);
+    system(command);
+    sprintf(info, "[CMD] %s", command);
+    ul_logger_info(info);
 
-  ul_logger_info("Compiling transpiled C code with gcc");
+    sprintf(command, "sed -i \'/^$/d\' %s", out);
+    system(command);
+    sprintf(info, "[CMD] %s", command);
+    ul_logger_info(info);
 
-  sprintf(command, "/usr/bin/cc -o %s %s", output, out);
-  system(command);
-  sprintf(info, "[CMD] %s", command);
-  ul_logger_info(info);
+    ul_logger_info("Compiling transpiled C code with gcc");
+
+    sprintf(command, "/usr/bin/gcc -o %s %s", output, out);
+    system(command);
+    sprintf(info, "[CMD] %s", command);
+    ul_logger_info(info);
+  } else {
+    ul_logger_erro("Program failed to compile...");
+  }
 
   destroy_lexer(l);
   destroy_parser(p);

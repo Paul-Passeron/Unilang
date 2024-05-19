@@ -1,6 +1,6 @@
 // Simple fizzbuzz example in Unilang
 
-@include "stdlib.ul"
+@include "stdlib/io.ul" 
 
 let fizzbuzz(n: i32): void => {
   loop i: 1 ->> n => {

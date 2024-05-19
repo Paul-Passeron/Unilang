@@ -33,6 +33,7 @@ typedef enum ast_kind_t {
   A_LOOP,
   A_VARDEF,
   A_INDEX,
+  A_ACCESS,
 } ast_kind_t;
 
 // Str lit ast node
@@ -138,6 +139,11 @@ typedef struct ast_tdef_t {
   type_t type;
 } ast_tdef_t;
 
+typedef struct ast_access_t {
+  ast_t object;
+  ast_t field;
+} ast_access_t;
+
 // union for all ast nodes
 typedef union ast_as_t {
   ast_str_lit_t *strlit;
@@ -157,32 +163,37 @@ typedef union ast_as_t {
   ast_loop_t *loop;
   ast_vardef_t *vardef;
   ast_index_t *index;
+  ast_access_t *access;
 } ast_as_t;
 
 // Main ast struct
 struct ast_struct_t {
   ast_kind_t kind;
   ast_as_t as;
+  location_t loc;
 };
 
-ast_t new_strlit(char *content);
-ast_t new_charlit(char *content);
-ast_t new_numlit(char *content, bool has_point);
-ast_t new_binop(token_kind_t op, ast_t left, ast_t right);
-ast_t new_unary(token_kind_t op, ast_t operand, bool is_postfix);
-ast_t new_iden(char *content);
-ast_t new_prog(); // empty
-ast_t new_fundef_param(ast_t type, char *name);
-ast_t new_fundef(ast_array_t params, ast_t return_type, char *name,
-                 ast_array_t body);
-ast_t new_funcall(char *name, ast_array_t args);
-ast_t new_compound(ast_array_t stmts);
-ast_t new_if(ast_t condition, ast_t ifstmt, ast_t elsestmt);
-ast_t new_return(ast_t expr);
-ast_t new_while(ast_t condition, ast_t stmt);
-ast_t new_loop(char *varname, ast_t init, ast_t end, ast_t stmt, bool strict);
-ast_t new_vardef(char *name, ast_t type, ast_t value);
-ast_t new_index(ast_t value, ast_t index);
+ast_t new_strlit(location_t loc, char *content);
+ast_t new_charlit(location_t loc, char *content);
+ast_t new_numlit(location_t loc, char *content, bool has_point);
+ast_t new_binop(location_t loc, token_kind_t op, ast_t left, ast_t right);
+ast_t new_unary(location_t loc, token_kind_t op, ast_t operand,
+                bool is_postfix);
+ast_t new_iden(location_t loc, char *content);
+ast_t new_prog(location_t loc); // empty
+ast_t new_fundef_param(location_t loc, ast_t type, char *name);
+ast_t new_fundef(location_t loc, ast_array_t params, ast_t return_type,
+                 char *name, ast_array_t body);
+ast_t new_funcall(location_t loc, char *name, ast_array_t args);
+ast_t new_compound(location_t loc, ast_array_t stmts);
+ast_t new_if(location_t loc, ast_t condition, ast_t ifstmt, ast_t elsestmt);
+ast_t new_return(location_t loc, ast_t expr);
+ast_t new_while(location_t loc, ast_t condition, ast_t stmt);
+ast_t new_loop(location_t loc, char *varname, ast_t init, ast_t end, ast_t stmt,
+               bool strict);
+ast_t new_vardef(location_t loc, char *name, ast_t type, ast_t value);
+ast_t new_index(location_t loc, ast_t value, ast_t index);
+ast_t new_access(location_t loc, ast_t object, ast_t field);
 
 const char *ast_kind_to_str(ast_kind_t kind);
 

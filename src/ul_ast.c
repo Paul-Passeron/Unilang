@@ -7,7 +7,7 @@
 
 extern unsigned int parser_arena;
 
-ast_t new_strlit(char *content) {
+ast_t new_strlit(location_t loc, char *content) {
   unsigned int old_arena = get_arena();
   set_arena(parser_arena);
   ast_t res = alloc(sizeof(struct ast_struct_t), 1);
@@ -16,10 +16,11 @@ ast_t new_strlit(char *content) {
   strlit->content = content;
   res->kind = A_STRLIT;
   res->as.strlit = strlit;
+  res->loc = loc;
   return res;
 }
 
-ast_t new_charlit(char *content) {
+ast_t new_charlit(location_t loc, char *content) {
   unsigned int old_arena = get_arena();
   set_arena(parser_arena);
   ast_t res = alloc(sizeof(struct ast_struct_t), 1);
@@ -28,10 +29,11 @@ ast_t new_charlit(char *content) {
   charlit->content = content;
   res->kind = A_CHARLIT;
   res->as.charlit = charlit;
+  res->loc = loc;
   return res;
 }
 
-ast_t new_numlit(char *content, bool has_point) {
+ast_t new_numlit(location_t loc, char *content, bool has_point) {
   unsigned int old_arena = get_arena();
   set_arena(parser_arena);
   ast_t res = alloc(sizeof(struct ast_struct_t), 1);
@@ -41,10 +43,11 @@ ast_t new_numlit(char *content, bool has_point) {
   nlit->has_point = has_point;
   res->kind = A_NUMLIT;
   res->as.numlit = nlit;
+  res->loc = loc;
   return res;
 }
 
-ast_t new_binop(token_kind_t op, ast_t left, ast_t right) {
+ast_t new_binop(location_t loc, token_kind_t op, ast_t left, ast_t right) {
   unsigned int old_arena = get_arena();
   set_arena(parser_arena);
   ast_t res = alloc(sizeof(struct ast_struct_t), 1);
@@ -55,18 +58,21 @@ ast_t new_binop(token_kind_t op, ast_t left, ast_t right) {
   binop->right = right;
   res->kind = A_BINOP;
   res->as.binop = binop;
+  res->loc = loc;
   return res;
 }
 
-ast_t new_unary(token_kind_t op, ast_t operand, bool is_postfix) {
+ast_t new_unary(location_t loc, token_kind_t op, ast_t operand,
+                bool is_postfix) {
   (void)op;
   (void)operand;
   (void)is_postfix;
+  (void)loc;
   ul_assert(false, "new_unary not implemented yet !");
   return NULL; //
 }
 
-ast_t new_iden(char *content) {
+ast_t new_iden(location_t loc, char *content) {
   unsigned int old_arena = get_arena();
   set_arena(parser_arena);
   ast_t res = alloc(sizeof(struct ast_struct_t), 1);
@@ -75,10 +81,11 @@ ast_t new_iden(char *content) {
   iden->content = content;
   res->kind = A_IDEN;
   res->as.iden = iden;
+  res->loc = loc;
   return res;
 }
 
-ast_t new_prog() {
+ast_t new_prog(location_t loc) {
   unsigned int old_arena = get_arena();
   set_arena(parser_arena);
   ast_t res = alloc(sizeof(struct ast_struct_t), 1);
@@ -86,11 +93,12 @@ ast_t new_prog() {
   set_arena(old_arena);
   ast_array_t arr = new_ast_dyn();
   *prog = (ast_prog_t){arr};
-  *res = (struct ast_struct_t){A_PROG, {.prog = prog}};
+  *res = (struct ast_struct_t){A_PROG, {.prog = prog}, .loc = {0}};
+  res->loc = loc;
   return res;
 }
 
-ast_t new_fundef_param(ast_t type, char *name) {
+ast_t new_fundef_param(location_t loc, ast_t type, char *name) {
   unsigned int old_arena = get_arena();
   set_arena(parser_arena);
   ast_t res = alloc(sizeof(struct ast_struct_t), 1);
@@ -100,11 +108,12 @@ ast_t new_fundef_param(ast_t type, char *name) {
   param->type = type;
   res->kind = A_FUNDEF_PARAM;
   res->as.fundef_param = param;
+  res->loc = loc;
   return res;
 }
 
-ast_t new_fundef(ast_array_t params, ast_t return_type, char *name,
-                 ast_array_t body) {
+ast_t new_fundef(location_t loc, ast_array_t params, ast_t return_type,
+                 char *name, ast_array_t body) {
   unsigned int old_arena = get_arena();
   set_arena(parser_arena);
   ast_t res = alloc(sizeof(struct ast_struct_t), 1);
@@ -116,10 +125,11 @@ ast_t new_fundef(ast_array_t params, ast_t return_type, char *name,
   fundef->body = body;
   res->kind = A_FUNDEF;
   res->as.fundef = fundef;
+  res->loc = loc;
   return res;
 }
 
-ast_t new_funcall(char *name, ast_array_t args) {
+ast_t new_funcall(location_t loc, char *name, ast_array_t args) {
   unsigned int old_arena = get_arena();
   set_arena(parser_arena);
   ast_t res = alloc(sizeof(struct ast_struct_t), 1);
@@ -129,28 +139,36 @@ ast_t new_funcall(char *name, ast_array_t args) {
   funcall->args = args;
   res->kind = A_FUNCALL;
   res->as.funcall = funcall;
+  res->loc = loc;
   return res;
 }
 
-ast_t new_compound(ast_array_t stmts) {
+ast_t new_compound(location_t loc, ast_array_t stmts) {
   unsigned int old_arena = get_arena();
   set_arena(parser_arena);
   ast_t res = alloc(sizeof(struct ast_struct_t), 1);
   ast_compound_t *compound = alloc(sizeof(ast_compound_t), 1);
   set_arena(old_arena);
   *compound = (ast_compound_t){stmts};
-  *res = (struct ast_struct_t){A_COMPOUND, {.compound = compound}};
+  *res = (struct ast_struct_t){A_COMPOUND, {.compound = compound}, .loc = {0}};
+  res->loc = loc;
   return res;
 }
 
-ast_t new_index(ast_t value, ast_t index) {
-  (void)value;
-  (void)index;
-  ul_assert(false, "new_index is not implemented yet !\n");
-  return NULL;
+ast_t new_index(location_t loc, ast_t value, ast_t index) {
+  unsigned int old_arena = get_arena();
+  set_arena(parser_arena);
+  ast_t res = alloc(sizeof(struct ast_struct_t), 1);
+  ast_index_t *i = alloc(sizeof(ast_index_t), 1);
+  set_arena(old_arena);
+  i->index = index;
+  i->value = value;
+  res->as.index = i;
+  res->kind = A_INDEX;
+  return res;
 }
 
-ast_t new_vardef(char *name, ast_t type, ast_t value) {
+ast_t new_vardef(location_t loc, char *name, ast_t type, ast_t value) {
   unsigned int old_arena = get_arena();
   set_arena(parser_arena);
   ast_t res = alloc(sizeof(struct ast_struct_t), 1);
@@ -161,10 +179,11 @@ ast_t new_vardef(char *name, ast_t type, ast_t value) {
   vdef->value = value;
   res->kind = A_VARDEF;
   res->as.vardef = vdef;
+  res->loc = loc;
   return res;
 }
 
-ast_t new_if(ast_t condition, ast_t ifstmt, ast_t elsestmt) {
+ast_t new_if(location_t loc, ast_t condition, ast_t ifstmt, ast_t elsestmt) {
   unsigned int old_arena = get_arena();
   set_arena(parser_arena);
   ast_t res = alloc(sizeof(struct ast_struct_t), 1);
@@ -175,10 +194,11 @@ ast_t new_if(ast_t condition, ast_t ifstmt, ast_t elsestmt) {
   ifnode->elsestmt = elsestmt;
   res->kind = A_IF;
   res->as.ifstmt = ifnode;
+  res->loc = loc;
   return res;
 }
 
-ast_t new_return(ast_t expr) {
+ast_t new_return(location_t loc, ast_t expr) {
   unsigned int old_arena = get_arena();
   set_arena(parser_arena);
   ast_t res = alloc(sizeof(struct ast_struct_t), 1);
@@ -187,10 +207,12 @@ ast_t new_return(ast_t expr) {
   ret->expr = expr;
   res->kind = A_RETURN;
   res->as.retstmt = ret;
+  res->loc = loc;
   return res;
 }
 
-ast_t new_loop(char *varname, ast_t init, ast_t end, ast_t stmt, bool strict) {
+ast_t new_loop(location_t loc, char *varname, ast_t init, ast_t end, ast_t stmt,
+               bool strict) {
   unsigned int old_arena = get_arena();
   set_arena(parser_arena);
   ast_t res = alloc(sizeof(struct ast_struct_t), 1);
@@ -203,6 +225,21 @@ ast_t new_loop(char *varname, ast_t init, ast_t end, ast_t stmt, bool strict) {
   loop->strict = strict;
   res->kind = A_LOOP;
   res->as.loop = loop;
+  res->loc = loc;
+  return res;
+}
+
+ast_t new_access(location_t loc, ast_t object, ast_t field) {
+  unsigned int old_arena = get_arena();
+  set_arena(parser_arena);
+  ast_t res = alloc(sizeof(struct ast_struct_t), 1);
+  ast_access_t *access = alloc(sizeof(ast_access_t), 1);
+  set_arena(old_arena);
+  access->object = object;
+  access->field = field;
+  res->kind = A_ACCESS;
+  res->as.access = access;
+  res->loc = loc;
   return res;
 }
 
@@ -242,6 +279,8 @@ const char *ast_kind_to_str(ast_kind_t kind) {
     return "A_VARDEF";
   case A_INDEX:
     return "A_INDEX";
+  case A_ACCESS:
+    return "A_ACCESS";
   default:
     return "";
   }

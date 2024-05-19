@@ -1,0 +1,19 @@
+/**
+ * syscall.ul
+ * Copyright (C) Paul Passeron
+ * Unilang Standard Library - Syscall
+ * Paul Passeron <paul.passeron2@gmail.com>
+**/
+
+/**
+ * write - write syscalls, writes 'count' bytes from
+ *         'buf' to 'fd' file descriptor
+ * @param fd: file descriptor to write bytes to
+ * @param buf: buffer containing chars to write
+ * @param count: number of bytes to write from 'buf'
+ * @returns the number of bytes successfully written
+            to 'fd'
+**/
+let write(fd: i32, buf: cstr, count: u64): i64 => {
+  return syscall3(1, fd, buf, count);
+}
