@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -pedantic
+CFLAGS=-Wall -Wextra -pedantic -g
 SRC=src/
 BUILD=build/
 BIN=bin/

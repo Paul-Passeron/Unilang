@@ -5,6 +5,7 @@
 #include "../include/parser.h"
 #include "../include/ul_allocator.h"
 #include "../include/ul_compiler_globals.h"
+#include <fcntl.h>
 #include <linux/limits.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -60,7 +61,7 @@ void ul_start(int argc, char **argv) {
   }
 
   ul_logger_info("Started Unilang compiler");
-  unsigned int arena = new_arena(2048);
+  unsigned int arena = new_arena(32);
   set_arena(arena);
 
   included_files = new_str_dyn();
@@ -114,6 +115,8 @@ void ul_start(int argc, char **argv) {
   destroy_lexer(l);
   destroy_parser(p);
   destroy_arena(arena);
+
+  // printf("%ld\n", O_CREAT);
 }
 
 void ul_exit(unsigned char exit_code) {

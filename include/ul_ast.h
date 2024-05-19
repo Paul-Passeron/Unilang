@@ -34,7 +34,8 @@ typedef enum ast_kind_t {
   A_VARDEF,
   A_INDEX,
   A_ACCESS,
-  A_TDEF
+  A_TDEF,
+  A_ASSIGN
 } ast_kind_t;
 
 // Str lit ast node
@@ -145,6 +146,11 @@ typedef struct ast_access_t {
   ast_t field;
 } ast_access_t;
 
+typedef struct ast_assign_t {
+  ast_t expr;
+  ast_t value;
+} ast_assign_t;
+
 // union for all ast nodes
 typedef union ast_as_t {
   ast_str_lit_t *strlit;
@@ -166,6 +172,7 @@ typedef union ast_as_t {
   ast_index_t *index;
   ast_tdef_t *tdef;
   ast_access_t *access;
+  ast_assign_t *assign;
 } ast_as_t;
 
 // Main ast struct
@@ -197,6 +204,8 @@ ast_t new_vardef(location_t loc, char *name, ast_t type, ast_t value);
 ast_t new_index(location_t loc, ast_t value, ast_t index);
 ast_t new_access(location_t loc, ast_t object, ast_t field);
 ast_t new_tdef(location_t loc, type_t type);
+ast_t new_assignement(location_t loc, ast_t expr, ast_t value);
+
 const char *ast_kind_to_str(ast_kind_t kind);
 
 #endif // UL_AST_H

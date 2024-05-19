@@ -16,7 +16,7 @@ typedef enum type_kind_t {
 } type_kind_t;
 
 typedef struct type_t {
-  char *name;
+  char name[128];
   type_kind_t kind;
   str_array_t members_types; // Don't initialize for primitive types
   str_array_t members_names; // Don't initialize for primitive types

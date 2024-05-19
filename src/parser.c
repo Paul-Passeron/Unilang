@@ -77,6 +77,11 @@ bool matches_lexeme(parser_t p, const char *lexeme) {
   return streq(tok.lexeme, lexeme);
 }
 
+bool is_assignement(parser_t p) {
+  (void)parse_expression(&p);
+  return peek_parser(p).kind == T_BIGARR;
+}
+
 // TODO: handle including files
 ast_t parse_program(parser_t *p) {
   ast_t prog = new_prog(peek_loc(*p));
@@ -335,7 +340,8 @@ ast_t parse_tdef_struct(parser_t *p) {
   expect(*p, T_CLOSEBRACE);
   consume_parser(p);
   // TODO: actually calculates the size of type
-  type_t res = {type_name, TY_STRUCT, types, fields, false, false, 0};
+  type_t res = {{0}, TY_STRUCT, types, fields, false, false, 0};
+  strcpy(res.name, type_name);
   return new_tdef(loc, res);
 }
 
@@ -364,6 +370,17 @@ ast_t parse_tdef(parser_t *p) {
   }
   expect_lexeme(*p, "struct");
   return NULL;
+}
+
+ast_t parse_assignement(parser_t *p) {
+  location_t loc = peek_loc(*p);
+  ast_t expr = parse_expression(p);
+  expect(*p, T_BIGARR);
+  consume_parser(p);
+  ast_t value = parse_expression(p);
+  expect(*p, T_SEMICOLON);
+  consume_parser(p);
+  return new_assignement(loc, expr, value);
 }
 
 ast_t parse_statement(parser_t *p) {
@@ -408,6 +425,11 @@ ast_t parse_statement(parser_t *p) {
     ul_logger_info_location(peek_parser(*p).location,
                             "Parsing current statement as vardef");
     return parse_vardef(p);
+  }
+  if (is_assignement(*p)) {
+    ul_logger_info_location(peek_parser(*p).location,
+                            "Parsing current statement as assignement");
+    return parse_assignement(p);
   }
 
   ul_logger_info_location(peek_parser(*p).location,
@@ -514,13 +536,18 @@ ast_t parse_vardef(parser_t *p) {
 
   ast_t type = parse_identifier(p);
 
-  expect(*p, T_BIGARR);
-  consume_parser(p);
+  if (peek_kind(*p) == T_SEMICOLON) {
+    consume_parser(p);
+    return new_vardef(loc, name, type, NULL);
+  } else {
+    expect(*p, T_BIGARR);
+    consume_parser(p);
 
-  ast_t value = parse_expression(p);
+    ast_t value = parse_expression(p);
 
-  expect(*p, T_SEMICOLON);
-  consume_parser(p);
+    expect(*p, T_SEMICOLON);
+    consume_parser(p);
 
-  return new_vardef(loc, name, type, value);
+    return new_vardef(loc, name, type, value);
+  }
 }

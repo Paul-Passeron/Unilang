@@ -92,6 +92,10 @@ int get_precedence(token_kind_t t) {
   case T_EQ:
   case T_DIFF:
     return 6;
+  case T_LOG_AND:
+    return 5;
+  case T_LOG_OR:
+    return 3;
   case T_AND:
     return 2;
   case T_OR:

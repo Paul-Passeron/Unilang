@@ -35,8 +35,9 @@ typedef enum token_kind_t {
   T_COLON,
   T_SEMICOLON,
   T_DOT,
-  T_COMMA
-
+  T_COMMA,
+  T_LOG_AND,
+  T_LOG_OR,
 } token_kind_t;
 
 typedef struct token_t {

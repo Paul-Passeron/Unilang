@@ -48,7 +48,26 @@ let println(s: string): void => {
   putchar(10);
 }
 
-struct file_t => {
-  filename: string,
+/**
+ * File struct, used as a handle when dealing with files
+**/
+struct file => {
+  fd: u64,
   mode: i8,
+}
+
+let open_file(path: string, flags: u32, mode: u32): file => {
+  let fd: i32 => open(path, flags, mode);
+  let res: file;
+  res.fd => fd;
+  res.mode => mode;
+  return res;
+}
+
+let fprint(f: file, s: string): void => {
+  write(f.fd, s.contents, s.length);
+}
+
+let close_file(f: file): void => {
+  close(f.fd);
 }

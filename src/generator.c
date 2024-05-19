@@ -237,16 +237,37 @@ void generate_vardef(ast_t vardef) {
   ul_logger_info("Generating Vardef");
   // type_array_t ts = generator.context.types;
   ast_vardef_t v = *vardef->as.vardef;
-  generate_type(v.type);
-  gprintf(" %s = ", v.name);
-  generate_expression(v.value);
-  gprintf(";\n");
-  var_array_t *vs = &generator.context.vars;
-  var_t var;
-  strcpy(var.name, v.name);
-  // var.type = f.type->as.iden->content;
-  strcpy(var.type, v.type->as.iden->content);
-  ul_dyn_append(vs, var);
+
+  if (v.value != NULL) {
+
+    generate_type(v.type);
+    gprintf(" %s", v.name);
+    gprintf("=");
+    generate_expression(v.value);
+    gprintf(";");
+    var_array_t *vs = &generator.context.vars;
+    var_t var;
+    strcpy(var.name, v.name);
+    // var.type = f.type->as.iden->content;
+    strcpy(var.type, v.type->as.iden->content);
+    ul_dyn_append(vs, var);
+  } else {
+    bool found;
+    type_t t = get_type_by_name(v.type->as.iden->content, &found);
+    ul_assert_location(vardef->loc, found, "Type problem");
+    if (!t.is_builtin && t.kind == TY_STRUCT) {
+      generate_type(v.type);
+      gprintf(" %s;", v.name);
+      gprintf("{");
+      gprintf("unsigned int old_arena=get_arena();");
+      gprintf("set_arena(new_arena(sizeof(struct __ul_internal_%s)));", t.name);
+      gprintf("%s", v.name);
+      gprintf("= alloc(sizeof(struct __ul_internal_%s), 1);", t.name);
+      gprintf("*%s=(struct __ul_internal_%s){0};", v.name, t.name);
+      gprintf("set_arena(old_arena);");
+      gprintf("}");
+    }
+  }
 }
 
 void generate_operator(token_kind_t op) {
@@ -476,6 +497,14 @@ void generate_tdef(ast_t tdef) {
   gprintf("} __ul_internal_%s;", t.type.name);
 }
 
+void generate_assign(ast_t assign) {
+  ast_assign_t a = *assign->as.assign;
+  generate_expression(a.expr);
+  gprintf("=");
+  generate_expression(a.value);
+  gprintf(";");
+}
+
 void generate_statement(ast_t stmt) {
   size_t l = ul_dyn_length(generator.context.vars);
   ul_logger_info("Generating Statement");
@@ -483,6 +512,9 @@ void generate_statement(ast_t stmt) {
   switch (stmt->kind) {
   case A_FUNDEF: {
     generate_fundef(stmt);
+    while (ul_dyn_length(generator.context.vars) > l) {
+      ul_dyn_destroy_last(&generator.context.vars);
+    }
   } break;
   case A_VARDEF: {
     generate_vardef(stmt);
@@ -492,15 +524,25 @@ void generate_statement(ast_t stmt) {
   } break;
   case A_COMPOUND: {
     generate_compound(stmt);
+    while (ul_dyn_length(generator.context.vars) > l) {
+      ul_dyn_destroy_last(&generator.context.vars);
+    }
   } break;
   case A_RETURN: {
     generate_return(stmt);
   } break;
   case A_LOOP: {
     generate_loop(stmt);
+    while (ul_dyn_length(generator.context.vars) > l) {
+      ul_dyn_destroy_last(&generator.context.vars);
+    }
   } break;
   case A_TDEF: {
     generate_tdef(stmt);
+  } break;
+  case A_ASSIGN: {
+    generate_assign(stmt);
+    // ul_assert(false, "");
   } break;
   default:
     found = false;
@@ -510,9 +552,7 @@ void generate_statement(ast_t stmt) {
     generate_expression(stmt);
     gprintf(";\n");
   }
-  while (ul_dyn_length(generator.context.vars) >= l) {
-    ul_dyn_destroy_last(&generator.context.vars);
-  }
+  // printf("%ld %ld\n", ul_dyn_length(generator.context.vars), l);
 }
 void generate_forward(ast_t prog) {
   ast_array_t contents = prog->as.prog->prog;
@@ -520,6 +560,7 @@ void generate_forward(ast_t prog) {
     ast_t stmt = dyn_ast_get(contents, i);
     if (stmt->kind == A_TDEF) {
       ast_tdef_t t = *stmt->as.tdef;
+      ul_dyn_append(&generator.context.types, t.type);
       gprintf("typedef struct __ul_internal_%s * %s;", t.type.name,
               t.type.name);
     }

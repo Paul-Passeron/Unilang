@@ -57,9 +57,14 @@ void *__internal_alloc(size_t s) {
             "Could not allocate: No arena found");
   ul_assert(__internal_arenas_popul[__internal_current_arena],
             "Could not allocate: No arena found");
+  char msg[256];
+  sprintf(msg,
+          "Could not allocate: Arena can't grow and s can't fit more alloc. "
+          "Size is %ld",
+          __internal_arenas[__internal_current_arena].size);
   ul_assert(__internal_arenas[__internal_current_arena].fill + s <=
                 __internal_arenas[__internal_current_arena].size,
-            "Could not allocate: Arena can't grow and s can't fit more alloc");
+            msg);
   void *res = (char *)__internal_arenas[__internal_current_arena].contents +
               __internal_arenas[__internal_current_arena].fill;
   __internal_arenas[__internal_current_arena].fill += s;

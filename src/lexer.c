@@ -38,9 +38,14 @@ const char *lexer_state_to_str(lexer_state_t state) {
 
 void new_lexer(lexer_t *l, char *path) {
   unsigned int old_arena = get_arena();
-  read_file(path, &l->buffer, &l->buffer_length);
+
+  FILE *f = fopen(path, "r");
+  fseek(f, 0, SEEK_END);
+  l->buffer_length = ftell(f);
+  fclose(f);
   l->arena = new_arena(l->buffer_length * 2 + PATH_MAX);
   set_arena(l->arena);
+  read_file(path, &l->buffer, &l->buffer_length);
   l->filename = alloc(PATH_MAX, 1);
   strcpy(l->filename, path);
   l->current_loc.col = 1;
@@ -302,11 +307,12 @@ bool step_numlit(lexer_t *l) {
   return true;
 }
 
-#define OPCOUNT 27
-static char delimiters[OPCOUNT][4] = {"->>", "->", "=>", "==", "!=", "&&", "||",
-                                      ">=",  "<=", "<",  ">",  "+",  "-",  "/",
-                                      "*",   "%",  "!",  "(",  ")",  "[",  "]",
-                                      "{",   "}",  ";",  ",",  ".",  ":"};
+#define OPCOUNT 29
+static char delimiters[OPCOUNT][4] = {
+    "->>", "->", "=>", "==", "!=", "&&", "||", ">=", "<=", "<",
+    ">",   "+",  "-",  "/",  "*",  "%",  "!",  "(",  ")",  "[",
+    "]",   "{",  "}",  ";",  ",",  ".",  ":",  "&",  "|",
+};
 
 static token_kind_t dels_kinds[] = {
     T_SMALLARRLARGE, T_SMALLARR,  T_BIGARR,     T_EQ,         T_DIFF,
@@ -314,7 +320,7 @@ static token_kind_t dels_kinds[] = {
     T_GRTR,          T_PLUS,      T_MINUS,      T_DIV,        T_MULT,
     T_MODULO,        T_NOT,       T_OPENPAREN,  T_CLOSEPAREN, T_OPENBRACKET,
     T_CLOSEBRACKET,  T_OPENBRACE, T_CLOSEBRACE, T_SEMICOLON,  T_COMMA,
-    T_DOT,           T_COLON};
+    T_DOT,           T_COLON,     T_LOG_AND,    T_LOG_OR};
 
 bool step_delim(lexer_t *l) {
   location_t loc = l->current_loc;

@@ -1,5 +1,7 @@
 @include "stdlib/io.ul"
 
 let entry(): void => {
-  print("Hello, World !\n");
+  let f: file => open_file("test", 65, 1877);
+  fprint(f,"Yes !");
+  close_file(f);
 } 
