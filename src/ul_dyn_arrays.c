@@ -35,7 +35,9 @@ void ul_dyn_append(__internal_dyn_array_t *arr, ...) {
   char *buff = alloc_zero(arr->stride, 1);
 
   if (!arr->is_ptr) {
-
+    if (arr->stride == 16) {
+      printf("VAR ???\n");
+    }
     // We suppose there is only one variadic argument
     // maybe check for endianness ??
     __internal_default_t t = va_arg(ptr, __internal_default_t);

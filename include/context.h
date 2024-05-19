@@ -13,8 +13,8 @@
 #include "ul_dyn_arrays.h"
 
 typedef struct var_t {
-  char *name;
-  char *type;
+  char name[128];
+  char type[128];
 } var_t;
 
 typedef __internal_dyn_array_t var_array_t;

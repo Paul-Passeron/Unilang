@@ -132,6 +132,7 @@ type_t get_type_of_var(const char *name, bool *found_name, bool *found_type) {
       return get_type_by_name(v.type, found_type);
     }
   }
+
   return (type_t){0};
 }
 
@@ -180,13 +181,26 @@ void generate_fundef_param(ast_t fundef_param) {
   ast_fundef_param_t f = *fundef_param->as.fundef_param;
   generate_type(f.type);
   gprintf(" %s", f.name);
+  var_array_t *vs = &generator.context.vars;
+  var_t var;
+  // var.name = f.name;
+  strcpy(var.name, f.name);
+  if (f.type->kind == A_IDEN) {
+    // var.type = f.type->as.iden->content;
+    strcpy(var.type, f.type->as.iden->content);
+  } else {
+    ul_assert(false, "WTF");
+  }
+  ul_dyn_append(vs, var);
 }
 
 void generate_fundef(ast_t fundef) {
   ul_logger_info("Generating Fundef");
 
   ast_fundef_t f = *fundef->as.fundef;
+
   generate_type(f.return_type);
+
   gprintf(" %s%s(", FUN_PREFIX, f.name);
   for (size_t i = 0; i < ul_dyn_length(f.params); ++i) {
     if (i > 0) {
@@ -221,12 +235,18 @@ void generate_funcall(ast_t funcall) {
 
 void generate_vardef(ast_t vardef) {
   ul_logger_info("Generating Vardef");
-
+  // type_array_t ts = generator.context.types;
   ast_vardef_t v = *vardef->as.vardef;
   generate_type(v.type);
   gprintf(" %s = ", v.name);
   generate_expression(v.value);
   gprintf(";\n");
+  var_array_t *vs = &generator.context.vars;
+  var_t var;
+  strcpy(var.name, v.name);
+  // var.type = f.type->as.iden->content;
+  strcpy(var.type, v.type->as.iden->content);
+  ul_dyn_append(vs, var);
 }
 
 void generate_operator(token_kind_t op) {
@@ -307,20 +327,52 @@ void generate_if(ast_t ifstmt) {
   }
 }
 
+type_t get_type_of_expr(ast_t expr) {
+  switch (expr->kind) {
+  case A_CHARLIT:
+    return CHAR_TYPE;
+  case A_STRLIT:
+    return STRING_TYPE;
+  case A_NUMLIT:
+    return I64_TYPE;
+  case A_IDEN: {
+    bool found_name;
+    bool found_type;
+    if (expr->kind == A_IDEN) {
+      return get_type_of_var(expr->as.iden->content, &found_name, &found_type);
+    } else {
+      ul_assert(false, "Cannot get type of expression yet !\n");
+      return (type_t){0};
+    }
+  }
+  default:
+    ul_assert(false, "Cannot get type of expression yet !\n");
+    return (type_t){0};
+  }
+}
+
 void generate_access(ast_t access) {
   ast_access_t a = *access->as.access;
   generate_expression(a.object);
   // Should do some checks here
-  gprintf(".%s", a.field->as.iden->content);
+  type_t t = get_type_of_expr(a.object);
+  if (streq(t.name, "string")) {
+    gprintf(".%s", a.field->as.iden->content);
+  } else {
+    gprintf("->%s", a.field->as.iden->content);
+  }
 }
 
 void generate_index(ast_t index) {
   ast_index_t i = *index->as.index;
-  gprintf("(");
-  generate_expression(i.value);
-  gprintf(").contents[");
-  generate_expression(i.index);
-  gprintf("]");
+  type_t t = get_type_of_expr(i.value);
+  if (streq(t.name, "string")) {
+    gprintf("(");
+    generate_expression(i.value);
+    gprintf(").contents[");
+    generate_expression(i.index);
+    gprintf("]");
+  }
 }
 
 void generate_expression(ast_t stmt) {
@@ -355,6 +407,7 @@ void generate_expression(ast_t stmt) {
     return;
   }
   case A_INDEX: {
+    ul_assert(false, "yes");
     generate_index(stmt);
     return;
   }
@@ -384,11 +437,11 @@ void generate_loop(ast_t loop) {
           "__ul_internal_init%d ? 1 : -1;",
           loops_n, loops_n, loops_n);
 
-  gprintf(
-      "for(i32 %s = __ul_internal_init%d; __ul_internal_incr%d * %s %s "
-      "__ul_internal_incr%d * __ul_internal_end%d; %s+=__ul_internal_incr%d )",
-      l.varname, loops_n, loops_n, l.varname, l.strict ? "<" : "<=", loops_n,
-      loops_n, l.varname, loops_n);
+  gprintf("for(i32 %s = __ul_internal_init%d; __ul_internal_incr%d * %s %s "
+          "__ul_internal_incr%d * __ul_internal_end%d; "
+          "%s+=__ul_internal_incr%d )",
+          l.varname, loops_n, loops_n, l.varname,
+          l.strict ? "<" : "<=", loops_n, loops_n, l.varname, loops_n);
 
   generate_statement(l.stmt);
   gprintf("}");
@@ -424,40 +477,42 @@ void generate_tdef(ast_t tdef) {
 }
 
 void generate_statement(ast_t stmt) {
+  size_t l = ul_dyn_length(generator.context.vars);
   ul_logger_info("Generating Statement");
+  bool found = true;
   switch (stmt->kind) {
   case A_FUNDEF: {
     generate_fundef(stmt);
-    return;
-  }
+  } break;
   case A_VARDEF: {
     generate_vardef(stmt);
-    return;
-  }
+  } break;
   case A_IF: {
     generate_if(stmt);
-    return;
-  }
+  } break;
   case A_COMPOUND: {
     generate_compound(stmt);
-    return;
-  }
+  } break;
   case A_RETURN: {
     generate_return(stmt);
-    return;
-  }
+  } break;
   case A_LOOP: {
     generate_loop(stmt);
-    return;
-  }
-  case A_TDEF:
+  } break;
+  case A_TDEF: {
     generate_tdef(stmt);
-    return;
+  } break;
   default:
+    found = false;
     break;
   }
-  generate_expression(stmt);
-  gprintf(";\n");
+  if (!found) {
+    generate_expression(stmt);
+    gprintf(";\n");
+  }
+  while (ul_dyn_length(generator.context.vars) >= l) {
+    ul_dyn_destroy_last(&generator.context.vars);
+  }
 }
 void generate_forward(ast_t prog) {
   ast_array_t contents = prog->as.prog->prog;
@@ -467,6 +522,24 @@ void generate_forward(ast_t prog) {
       ast_tdef_t t = *stmt->as.tdef;
       gprintf("typedef struct __ul_internal_%s * %s;", t.type.name,
               t.type.name);
+    }
+  }
+  for (size_t i = 0; i < ul_dyn_length(contents); i++) {
+    ast_t stmt = dyn_ast_get(contents, i);
+    if (stmt->kind == A_FUNDEF) {
+      ast_fundef_t f = *stmt->as.fundef;
+      if (streq(f.name, "entry"))
+        continue;
+      generate_type(f.return_type);
+      gprintf(" %s%s(", FUN_PREFIX, f.name);
+      for (size_t i = 0; i < ul_dyn_length(f.params); ++i) {
+        if (i > 0) {
+          gprintf(", ");
+        }
+        ast_t param = dyn_ast_get(f.params, i);
+        generate_fundef_param(param);
+      }
+      gprintf(");");
     }
   }
 }

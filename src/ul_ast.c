@@ -165,6 +165,7 @@ ast_t new_index(location_t loc, ast_t value, ast_t index) {
   i->value = value;
   res->as.index = i;
   res->kind = A_INDEX;
+  res->loc = loc;
   return res;
 }
 

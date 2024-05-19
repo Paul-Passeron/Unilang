@@ -2,5 +2,4 @@
 
 let entry(): void => {
   print("Hello, World !\n");
-  println(read(0, 5));
 } 
