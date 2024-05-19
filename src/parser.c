@@ -308,6 +308,64 @@ ast_t parse_funcall(parser_t *p) {
   return new_funcall(loc, tok.lexeme, args);
 }
 
+ast_t parse_tdef_struct(parser_t *p) {
+  expect_lexeme(*p, "struct");
+  location_t loc = peek_loc(*p);
+  consume_parser(p);
+  expect(*p, T_WORD);
+  char *type_name = consume_parser(p).lexeme;
+  expect(*p, T_BIGARR);
+  consume_parser(p);
+  expect(*p, T_OPENBRACE);
+  consume_parser(p);
+  str_array_t fields = new_str_dyn();
+  str_array_t types = new_str_dyn();
+  while (peek_kind(*p) != T_CLOSEBRACE) {
+    expect(*p, T_WORD);
+    ul_dyn_append(&fields, consume_parser(p).lexeme);
+    expect(*p, T_COLON);
+    consume_parser(p);
+    expect(*p, T_WORD);
+    ul_dyn_append(&types, consume_parser(p).lexeme);
+    if (peek_kind(*p) != T_COMMA) {
+      break;
+    }
+    consume_parser(p);
+  }
+  expect(*p, T_CLOSEBRACE);
+  consume_parser(p);
+  // TODO: actually calculates the size of type
+  type_t res = {type_name, TY_STRUCT, types, fields, false, false, 0};
+  return new_tdef(loc, res);
+}
+
+ast_t parse_tdef_enum(parser_t *p) {
+  (void)p;
+  ul_assert(false, "parse_tdef_enum is not implemented yet !");
+  return NULL;
+}
+
+ast_t parse_tdef_alias(parser_t *p) {
+  (void)p;
+  ul_assert(false, "parse_tdef_alias is not implemented yet !");
+  return NULL;
+}
+
+ast_t parse_tdef(parser_t *p) {
+  token_t tok = peek_parser(*p);
+  if (streq(tok.lexeme, "struct")) {
+    return parse_tdef_struct(p);
+  }
+  if (streq(tok.lexeme, "enum")) {
+    return parse_tdef_enum(p);
+  }
+  if (streq(tok.lexeme, "alias")) {
+    return parse_tdef_alias(p);
+  }
+  expect_lexeme(*p, "struct");
+  return NULL;
+}
+
 ast_t parse_statement(parser_t *p) {
   if (is_parser_done(*p))
     return NULL;
@@ -341,6 +399,9 @@ ast_t parse_statement(parser_t *p) {
     ul_logger_info_location(peek_parser(*p).location,
                             "Parsing current statement as fundef");
     return parse_fundef(p);
+  }
+  if (streq(tok.lexeme, "struct")) {
+    return parse_tdef(p);
   }
   if (streq(tok.lexeme, "let")) {
 

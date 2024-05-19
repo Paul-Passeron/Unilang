@@ -145,14 +145,16 @@ void destroy_generator(void) {
 
 bool has_failed(void) { return generator.failed; }
 
+void generate_forward(ast_t prog);
+
 void generate_program(ast_t prog) {
   ul_logger_info("Generating Program");
   generate_prolog();
+  generate_forward(prog);
   ast_array_t contents = prog->as.prog->prog;
   for (size_t i = 0; i < ul_dyn_length(contents); i++) {
-    ast_t *stmt_ptr = ((ast_t *)__internal_dyn_get(contents, i));
-    fflush(stdout);
-    generate_statement(*stmt_ptr);
+    ast_t stmt = dyn_ast_get(contents, i);
+    generate_statement(stmt);
   }
 }
 
@@ -409,6 +411,18 @@ void generate_return(ast_t ret) {
   gprintf(";");
 }
 
+void generate_tdef(ast_t tdef) {
+  ast_tdef_t t = *tdef->as.tdef;
+  // gprintf("typedef struct __ul_internal%s %s")
+  gprintf("typedef struct __ul_internal_%s {", t.type.name);
+  for (size_t i = 0; i < ul_dyn_length(t.type.members_names); i++) {
+    char *name = dyn_str_get(t.type.members_names, i);
+    char *type = dyn_str_get(t.type.members_types, i);
+    gprintf("%s %s;", type, name);
+  }
+  gprintf("} __ul_internal_%s;", t.type.name);
+}
+
 void generate_statement(ast_t stmt) {
   ul_logger_info("Generating Statement");
   switch (stmt->kind) {
@@ -436,11 +450,25 @@ void generate_statement(ast_t stmt) {
     generate_loop(stmt);
     return;
   }
+  case A_TDEF:
+    generate_tdef(stmt);
+    return;
   default:
     break;
   }
   generate_expression(stmt);
   gprintf(";\n");
+}
+void generate_forward(ast_t prog) {
+  ast_array_t contents = prog->as.prog->prog;
+  for (size_t i = 0; i < ul_dyn_length(contents); i++) {
+    ast_t stmt = dyn_ast_get(contents, i);
+    if (stmt->kind == A_TDEF) {
+      ast_tdef_t t = *stmt->as.tdef;
+      gprintf("typedef struct __ul_internal_%s * %s;", t.type.name,
+              t.type.name);
+    }
+  }
 }
 
 void generate_prolog() {

@@ -243,6 +243,19 @@ ast_t new_access(location_t loc, ast_t object, ast_t field) {
   return res;
 }
 
+ast_t new_tdef(location_t loc, type_t type) {
+  unsigned int old_arena = get_arena();
+  set_arena(parser_arena);
+  ast_t res = alloc(sizeof(struct ast_struct_t), 1);
+  ast_tdef_t *tdef = alloc(sizeof(ast_tdef_t), 1);
+  set_arena(old_arena);
+  tdef->type = type;
+  res->kind = A_TDEF;
+  res->as.tdef = tdef;
+  res->loc = loc;
+  return res;
+}
+
 const char *ast_kind_to_str(ast_kind_t kind) {
   switch (kind) {
   case A_STRLIT:
@@ -281,6 +294,8 @@ const char *ast_kind_to_str(ast_kind_t kind) {
     return "A_INDEX";
   case A_ACCESS:
     return "A_ACCESS";
+  case A_TDEF:
+    return "A_TDEF";
   default:
     return "";
   }
