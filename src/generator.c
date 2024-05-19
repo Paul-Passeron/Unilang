@@ -76,26 +76,38 @@ void set_generator_target(const char *target) {
     ul_logger_erro("Could not set generator to target...");
     ul_exit(1);
   }
-  generator.types = new_type_dyn();
-  ul_dyn_append(&generator.types, CHAR_TYPE);
-  ul_dyn_append(&generator.types, U8_TYPE);
-  ul_dyn_append(&generator.types, I8_TYPE);
-  ul_dyn_append(&generator.types, U16_TYPE);
-  ul_dyn_append(&generator.types, I16_TYPE);
-  ul_dyn_append(&generator.types, U32_TYPE);
-  ul_dyn_append(&generator.types, I32_TYPE);
-  ul_dyn_append(&generator.types, U64_TYPE);
-  ul_dyn_append(&generator.types, I64_TYPE);
+  generator.context.types = new_type_dyn();
+  generator.context.vars = new_var_dyn();
+  ul_dyn_append(&generator.context.types, CHAR_TYPE);
+  ul_dyn_append(&generator.context.types, U8_TYPE);
+  ul_dyn_append(&generator.context.types, I8_TYPE);
+  ul_dyn_append(&generator.context.types, U16_TYPE);
+  ul_dyn_append(&generator.context.types, I16_TYPE);
+  ul_dyn_append(&generator.context.types, U32_TYPE);
+  ul_dyn_append(&generator.context.types, I32_TYPE);
+  ul_dyn_append(&generator.context.types, U64_TYPE);
+  ul_dyn_append(&generator.context.types, I64_TYPE);
   generator.target = f;
 }
 
 type_t get_type_by_name(const char *name, bool *found) {
   *found = false;
-  for (size_t i = 0; i < ul_dyn_length(generator.types); i++) {
-    type_t t = dyn_type_get(generator.types, i);
+  for (size_t i = 0; i < ul_dyn_length(generator.context.types); i++) {
+    type_t t = dyn_type_get(generator.context.types, i);
     if (streq(t.name, name)) {
       *found = true;
       return t;
+    }
+  }
+  return (type_t){0};
+}
+
+type_t get_type_of_var(const char *name, bool *found_name, bool *found_type) {
+  for (size_t i = 0; i < ul_dyn_length(generator.context.vars); i++) {
+    var_t v = dyn_var_get(generator.context.vars, i);
+    if (streq(v.name, name)) {
+      *found_name = true;
+      return get_type_by_name(v.type, found_type);
     }
   }
   return (type_t){0};
@@ -106,7 +118,7 @@ void destroy_generator(void) {
     return;
   fclose(generator.target);
   generator.target = NULL;
-  ul_dyn_destroy(generator.types);
+  ul_dyn_destroy(generator.context.types);
 }
 
 void generate_program(ast_t prog) {

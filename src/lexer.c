@@ -81,9 +81,6 @@ char peek_n_chars(lexer_t l, size_t n) {
 bool is_end_of_file(lexer_t l) { return l.buffer_index >= l.buffer_length; }
 
 bool matches_string(lexer_t l, const char *str) {
-  if (streq(str, "->>")) {
-    printf("THIS IS IT\n");
-  }
   while (*str) {
     if (consume_char(&l) != *(str++))
       return false;
@@ -322,9 +319,6 @@ static token_kind_t dels_kinds[] = {
 bool step_delim(lexer_t *l) {
   location_t loc = l->current_loc;
   for (size_t i = 0; i < OPCOUNT; i++) {
-    if (!i) {
-      printf("%s\n", delimiters[i]);
-    }
     if (matches_string(*l, delimiters[i])) {
       token_t tok;
       for (size_t k = 0; k < strlen(delimiters[i]); k++) {

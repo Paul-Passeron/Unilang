@@ -4,7 +4,7 @@ SRC=src/
 BUILD=build/
 BIN=bin/
 
-DEPS=$(BUILD)lexer.o $(BUILD)ul_allocator.o $(BUILD)ul_io.o $(BUILD)ul_flow.o   $(BUILD)ul_types.o $(BUILD)name_table.o  $(BUILD)token.o $(BUILD)ul_ast.o $(BUILD)ul_dyn_arrays.o $(BUILD)location.o $(BUILD)main.o $(BUILD)ul_compiler_globals.o $(BUILD)parser.o $(BUILD)logger.o $(BUILD)ul_assert.o $(BUILD)generator.o
+DEPS=$(BUILD)lexer.o $(BUILD)ul_allocator.o $(BUILD)ul_io.o $(BUILD)ul_flow.o   $(BUILD)ul_types.o $(BUILD)name_table.o  $(BUILD)context.o $(BUILD)token.o $(BUILD)ul_ast.o $(BUILD)ul_dyn_arrays.o $(BUILD)location.o $(BUILD)main.o $(BUILD)ul_compiler_globals.o $(BUILD)parser.o $(BUILD)logger.o $(BUILD)ul_assert.o $(BUILD)generator.o
 all: lines Unilang
 lines:
 	@echo "C:"
