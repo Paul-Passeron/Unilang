@@ -13,7 +13,7 @@ unsigned int parser_arena;
 parser_t new_parser(token_array_t toks) {
   parser_t res;
   size_t l = ul_dyn_length(toks);
-  size_t to_allocate = l * 4 * (sizeof(ast_t) + sizeof(struct ast_struct_t));
+  size_t to_allocate = 4 * l * (sizeof(ast_t) + sizeof(struct ast_struct_t));
   unsigned int old_arena = get_arena();
   unsigned int arena = new_arena(to_allocate);
   parser_arena = arena;
@@ -126,26 +126,33 @@ ast_t parse_leaf(parser_t *p) {
   ast_t res = NULL;
   token_t tok = peek_parser(*p);
   if (tok.kind == T_OPENPAREN) {
+    ul_logger_info_location(tok.location, "parsing leaf as paren expression");
     consume_parser(p);
     res = parse_expression(p);
     expect(*p, T_CLOSEPAREN);
     consume_parser(p);
-  }
-  if (is_funcall(*p)) {
+  } else if (is_funcall(*p)) {
+    ul_logger_info_location(tok.location, "parsing leaf as funcall");
     res = parse_funcall(p);
   } else if (tok.kind == T_WORD) {
+    ul_logger_info_location(tok.location, "parsing leaf as identifier");
     res = parse_identifier(p);
   } else if (tok.kind == T_STRLIT) {
+    ul_logger_info_location(tok.location, "parsing leaf as strlit");
     res = parse_strlit(p);
   } else if (tok.kind == T_NUMLIT) {
+    ul_logger_info_location(tok.location, "parsing leaf as numlit");
     res = parse_numlit(p);
   } else if (tok.kind == T_CHARLIT) {
+    ul_logger_info_location(tok.location, "parsing leaf as charlit");
     res = parse_charlit(p);
   }
   ul_assert_location(tok.location, res != NULL, "Could not parse leaf");
   tok = peek_parser(*p);
   if (tok.kind != T_OPENBRACKET)
     return res;
+  ul_logger_info_location(tok.location, "Adding indexing to leaf");
+
   consume_parser(p);
   ast_t expr = parse_expression(p);
   expect(*p, T_CLOSEBRACKET);
@@ -198,9 +205,9 @@ ast_t parse_numlit(parser_t *p) {
   return new_numlit(tok.lexeme, has_point);
 }
 ast_t parse_charlit(parser_t *p) {
-  (void)p;
-  ul_assert(false, "parse_charlit not implemented yet !");
-  return NULL;
+  expect(*p, T_CHARLIT);
+  token_t tok = consume_parser(p);
+  return new_charlit(tok.lexeme);
 }
 
 ast_t parse_fundef_param(parser_t *p) {
@@ -272,7 +279,7 @@ ast_t parse_funcall(parser_t *p) {
     ul_dyn_append(&args, expr);
     if (peek_kind(*p) == T_CLOSEPAREN)
       break;
-    expect(*p, T_COLON);
+    expect(*p, T_COMMA);
     consume_parser(p);
   }
 
@@ -367,9 +374,12 @@ ast_t parse_ifstmt(parser_t *p) {
 }
 
 ast_t parse_returnstmt(parser_t *p) {
-  (void)p;
-  ul_assert(false, "parse_returnstmt is not implemented yet !");
-  return NULL;
+  expect_lexeme(*p, "return");
+  consume_parser(p);
+  ast_t expr = parse_expression(p);
+  expect(*p, T_SEMICOLON);
+  consume_parser(p);
+  return new_return(expr);
 }
 ast_t parse_whilestmt(parser_t *p) {
   (void)p;
@@ -377,9 +387,28 @@ ast_t parse_whilestmt(parser_t *p) {
   return NULL;
 }
 ast_t parse_loop(parser_t *p) {
-  (void)p;
-  ul_assert(false, "parse_loop is not implemented yet !");
-  return NULL;
+  expect_lexeme(*p, "loop");
+  consume_parser(p);
+  expect(*p, T_WORD);
+  char *varname = consume_parser(p).lexeme;
+  expect(*p, T_COLON);
+  consume_parser(p);
+  ast_t init = parse_expression(p);
+  bool is_strict;
+  if (streq(peek_parser(*p).lexeme, "->")) {
+    expect(*p, T_SMALLARR);
+    consume_parser(p);
+    is_strict = true;
+  } else {
+    expect(*p, T_SMALLARRLARGE);
+    consume_parser(p);
+    is_strict = false;
+  }
+  ast_t end = parse_expression(p);
+  expect(*p, T_BIGARR);
+  consume_parser(p);
+  ast_t body = parse_statement(p);
+  return new_loop(varname, init, end, body, is_strict);
 }
 
 ast_t parse_vardef(parser_t *p) {

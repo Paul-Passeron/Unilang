@@ -19,14 +19,21 @@ ast_t new_strlit(char *content) {
   return res;
 }
 
-ast_t new_charlit(char content) {
-  (void)content;
-  ul_assert(false, "new_charlit not implemented yet !");
-  return NULL; //
+ast_t new_charlit(char *content) {
+  unsigned int old_arena = get_arena();
+  set_arena(parser_arena);
+  ast_t res = alloc(sizeof(struct ast_struct_t), 1);
+  ast_char_lit_t *charlit = alloc(sizeof(ast_char_lit_t), 1);
+  set_arena(old_arena);
+  charlit->content = content;
+  res->kind = A_CHARLIT;
+  res->as.charlit = charlit;
+  return res;
 }
 
 ast_t new_numlit(char *content, bool has_point) {
   unsigned int old_arena = get_arena();
+  set_arena(parser_arena);
   ast_t res = alloc(sizeof(struct ast_struct_t), 1);
   ast_num_lit_t *nlit = alloc(sizeof(ast_num_lit_t), 1);
   set_arena(old_arena);
@@ -39,6 +46,7 @@ ast_t new_numlit(char *content, bool has_point) {
 
 ast_t new_binop(token_kind_t op, ast_t left, ast_t right) {
   unsigned int old_arena = get_arena();
+  set_arena(parser_arena);
   ast_t res = alloc(sizeof(struct ast_struct_t), 1);
   ast_binop_t *binop = alloc(sizeof(ast_binop_t), 1);
   set_arena(old_arena);
@@ -167,6 +175,34 @@ ast_t new_if(ast_t condition, ast_t ifstmt, ast_t elsestmt) {
   ifnode->elsestmt = elsestmt;
   res->kind = A_IF;
   res->as.ifstmt = ifnode;
+  return res;
+}
+
+ast_t new_return(ast_t expr) {
+  unsigned int old_arena = get_arena();
+  set_arena(parser_arena);
+  ast_t res = alloc(sizeof(struct ast_struct_t), 1);
+  ast_return_t *ret = alloc(sizeof(ast_return_t), 1);
+  set_arena(old_arena);
+  ret->expr = expr;
+  res->kind = A_RETURN;
+  res->as.retstmt = ret;
+  return res;
+}
+
+ast_t new_loop(char *varname, ast_t init, ast_t end, ast_t stmt, bool strict) {
+  unsigned int old_arena = get_arena();
+  set_arena(parser_arena);
+  ast_t res = alloc(sizeof(struct ast_struct_t), 1);
+  ast_loop_t *loop = alloc(sizeof(ast_loop_t), 1);
+  set_arena(old_arena);
+  loop->end = end;
+  loop->init = init;
+  loop->varname = varname;
+  loop->stmt = stmt;
+  loop->strict = strict;
+  res->kind = A_LOOP;
+  res->as.loop = loop;
   return res;
 }
 

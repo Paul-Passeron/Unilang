@@ -101,7 +101,7 @@ void ul_start(int argc, char **argv) {
 
   ul_logger_info("Compiling transpiled C code with gcc");
 
-  sprintf(command, "/usr/bin/gcc -o %s %s", output, out);
+  sprintf(command, "/usr/bin/cc -o %s %s", output, out);
   system(command);
   sprintf(info, "[CMD] %s", command);
   ul_logger_info(info);

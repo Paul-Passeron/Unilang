@@ -1,8 +1,5 @@
-// Simple hello world example in Unilang
-
 @include "stdlib.ul"
 
 let entry(): void => {
-  print_num(12345);
-  print("\n");
- }
+  println("Hello, World !");
+} 

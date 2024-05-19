@@ -3,6 +3,7 @@
 
 #include "../include/generator.h"
 #include "../include/logger.h"
+#include "../include/ul_allocator.h"
 #include "../include/ul_assert.h"
 #include "../include/ul_compiler_globals.h"
 #include "../include/ul_flow.h"
@@ -10,6 +11,7 @@
 
 generator_t generator;
 
+#define FUN_PREFIX "__UL_"
 #define gprintf(...) fprintf(generator.target, __VA_ARGS__)
 
 // Create builtin types
@@ -56,6 +58,18 @@ const type_t I32_TYPE = {.name = "i32",
                          .kind = TY_PRIMITIVE,
                          .is_signed = true};
 
+const type_t U64_TYPE = {.name = "u64",
+                         .is_builtin = true,
+                         .size = 8,
+                         .kind = TY_PRIMITIVE,
+                         .is_signed = false};
+
+const type_t I64_TYPE = {.name = "i64",
+                         .is_builtin = true,
+                         .size = 8,
+                         .kind = TY_PRIMITIVE,
+                         .is_signed = true};
+
 void set_generator_target(const char *target) {
   FILE *f = fopen(target, "w");
   if (f == NULL) {
@@ -70,6 +84,8 @@ void set_generator_target(const char *target) {
   ul_dyn_append(&generator.types, I16_TYPE);
   ul_dyn_append(&generator.types, U32_TYPE);
   ul_dyn_append(&generator.types, I32_TYPE);
+  ul_dyn_append(&generator.types, U64_TYPE);
+  ul_dyn_append(&generator.types, I64_TYPE);
   generator.target = f;
 }
 
@@ -124,7 +140,7 @@ void generate_fundef(ast_t fundef) {
 
   ast_fundef_t f = *fundef->as.fundef;
   generate_type(f.return_type);
-  gprintf(" %s(", f.name);
+  gprintf(" %s%s(", FUN_PREFIX, f.name);
   for (size_t i = 0; i < ul_dyn_length(f.params); ++i) {
     if (i > 0) {
       gprintf(", ");
@@ -145,7 +161,7 @@ void generate_funcall(ast_t funcall) {
   ul_logger_info("Generating Funcall");
 
   ast_funcall_t f = *funcall->as.funcall;
-  gprintf("%s(", f.name);
+  gprintf("%s%s(", FUN_PREFIX, f.name);
   for (size_t i = 0; i < ul_dyn_length(f.args); ++i) {
     if (i > 0) {
       gprintf(", ");
@@ -248,7 +264,7 @@ void generate_expression(ast_t stmt) {
   ul_logger_info("Generating Expression");
   switch (stmt->kind) {
   case A_STRLIT: {
-    gprintf("%s", stmt->as.strlit->content);
+    gprintf("__internal_cstr_to_string(%s)", stmt->as.strlit->content);
     return;
   }
   case A_FUNCALL: {
@@ -263,6 +279,10 @@ void generate_expression(ast_t stmt) {
     generate_iden(stmt);
     return;
   }
+  case A_CHARLIT: {
+    gprintf("%s", stmt->as.charlit->content);
+    return;
+  }
   case A_NUMLIT: {
     generate_numlit(stmt);
     return;
@@ -274,6 +294,36 @@ void generate_expression(ast_t stmt) {
   ul_assert(false, "This kind of expression is not implemented yet");
 }
 
+unsigned int loops_n = 0;
+
+void generate_loop(ast_t loop) {
+  loops_n++;
+  ast_loop_t l = *loop->as.loop;
+  gprintf("{");
+
+  gprintf("i32 __ul_internal_init%d = ", loops_n);
+  generate_expression(l.init);
+  gprintf(";");
+
+  gprintf("i32 __ul_internal_end%d = ", loops_n);
+  generate_expression(l.end);
+  gprintf(";");
+
+  gprintf("i32 __ul_internal_incr%d = __ul_internal_end%d >= "
+          "__ul_internal_init%d ? 1 : -1;",
+          loops_n, loops_n, loops_n);
+
+  gprintf(
+      "for(i32 %s = __ul_internal_init%d; __ul_internal_incr%d * %s %s "
+      "__ul_internal_incr%d * __ul_internal_end%d; %s+=__ul_internal_incr%d )",
+      l.varname, loops_n, loops_n, l.varname, l.strict ? "<" : "<=", loops_n,
+      loops_n, l.varname, loops_n);
+
+  generate_statement(l.stmt);
+  gprintf("}");
+  loops_n--;
+}
+
 void generate_compound(ast_t compound) {
   ast_compound_t c = *compound->as.compound;
   gprintf("{\n");
@@ -281,6 +331,13 @@ void generate_compound(ast_t compound) {
     generate_statement(dyn_ast_get(c.stmts, i));
   }
   gprintf("}\n");
+}
+
+void generate_return(ast_t ret) {
+  ast_return_t r = *ret->as.retstmt;
+  gprintf("return ");
+  generate_expression(r.expr);
+  gprintf(";");
 }
 
 void generate_statement(ast_t stmt) {
@@ -298,9 +355,18 @@ void generate_statement(ast_t stmt) {
     generate_if(stmt);
     return;
   }
-  case A_COMPOUND:
+  case A_COMPOUND: {
     generate_compound(stmt);
     return;
+  }
+  case A_RETURN: {
+    generate_return(stmt);
+    return;
+  }
+  case A_LOOP: {
+    generate_loop(stmt);
+    return;
+  }
   default:
     break;
   }
@@ -310,9 +376,14 @@ void generate_statement(ast_t stmt) {
 
 void generate_prolog() {
   ul_logger_info("Generating Prolog");
-
-  size_t length;
   char *buff;
+  FILE *f = fopen("src/template/prologue.c", "r");
+  fseek(f, 0, SEEK_END);
+  size_t length = ftell(f);
+  fclose(f);
+  unsigned int old_arena = get_arena();
+  set_arena(new_arena(length + 1));
   read_file("src/template/prologue.c", &buff, &length);
+  set_arena(old_arena);
   gprintf("%s", buff);
 }

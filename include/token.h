@@ -25,6 +25,7 @@ typedef enum token_kind_t {
   T_DIFF,
   T_BIGARR,
   T_SMALLARR,
+  T_SMALLARRLARGE,
   T_OPENPAREN,
   T_CLOSEPAREN,
   T_OPENBRACKET,

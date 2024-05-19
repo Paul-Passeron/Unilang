@@ -42,7 +42,7 @@ typedef struct ast_str_lit_t {
 
 // Char lit ast node
 typedef struct ast_char_lit_t {
-  char content; // actually containing the character itself
+  const char *content; // actually containing the character itself
 } ast_char_lit_t;
 
 // Num lit ast node
@@ -120,6 +120,7 @@ typedef struct ast_loop_t {
   ast_t init;
   ast_t end;
   ast_t stmt;
+  bool strict;
 } ast_loop_t;
 
 typedef struct ast_vardef_t {
@@ -165,7 +166,7 @@ struct ast_struct_t {
 };
 
 ast_t new_strlit(char *content);
-ast_t new_charlit(char content);
+ast_t new_charlit(char *content);
 ast_t new_numlit(char *content, bool has_point);
 ast_t new_binop(token_kind_t op, ast_t left, ast_t right);
 ast_t new_unary(token_kind_t op, ast_t operand, bool is_postfix);
@@ -179,7 +180,7 @@ ast_t new_compound(ast_array_t stmts);
 ast_t new_if(ast_t condition, ast_t ifstmt, ast_t elsestmt);
 ast_t new_return(ast_t expr);
 ast_t new_while(ast_t condition, ast_t stmt);
-ast_t new_loop(char *varname, ast_t init, ast_t end, ast_t stmt);
+ast_t new_loop(char *varname, ast_t init, ast_t end, ast_t stmt, bool strict);
 ast_t new_vardef(char *name, ast_t type, ast_t value);
 ast_t new_index(ast_t value, ast_t index);
 

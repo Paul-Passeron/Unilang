@@ -7,14 +7,37 @@
 
 /**
  * print_num - Prints a number on the standard output
- * @n: The numnber to print
+ * @param n: The numnber to print
  * @return: void
 **/
 let print_num(n: i32): void => {
   let a: i32 => n / 10;
-  if (a != 0 )=>  {
+  if (a != 0) =>  {
     print_num(a);
   }
   putchar(n%10 + '0');
 }
 
+
+/**
+ * pow - Calculates a number to the power of another number
+ * @param x: The base 
+ * @param n: The exponent 
+ * @return: x^n
+**/
+let pow(x: i32, n: i32): i32 => {
+  if (n == 0) => return 1;
+  if (n == 1) => return x;
+  if (n % 2 == 0) => return pow(x * x, n / 2);
+  return x * pow(x * x, (n - 1) / 2);
+}
+
+/**
+ * println - Prints a string with a new line at the end
+ * @param s: the string to print
+ * @return: void
+**/
+let println(s: string): void => {
+  print(s);
+  print("\n");
+}

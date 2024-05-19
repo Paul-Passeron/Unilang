@@ -81,6 +81,9 @@ char peek_n_chars(lexer_t l, size_t n) {
 bool is_end_of_file(lexer_t l) { return l.buffer_index >= l.buffer_length; }
 
 bool matches_string(lexer_t l, const char *str) {
+  if (streq(str, "->>")) {
+    printf("THIS IS IT\n");
+  }
   while (*str) {
     if (consume_char(&l) != *(str++))
       return false;
@@ -261,7 +264,7 @@ bool step_charlit(lexer_t *l) {
   buffer[current_index++] = consume_char(l);
   token_t tok;
   tok.location = loc;
-  tok.kind = T_STRLIT;
+  tok.kind = T_CHARLIT;
   unsigned int old_arena = get_arena();
   set_arena(l->arena);
   tok.lexeme = alloc_preset_ptr(1, current_index + 1, buffer);
@@ -302,21 +305,26 @@ bool step_numlit(lexer_t *l) {
   return true;
 }
 
-#define OPCOUNT 25
-static char delimiters[OPCOUNT][3] = {
-    "=>", "==", "!=", "&&", "||", ">=", "<=", "<", ">", "+", "-", "/", "*",
-    "%",  "!",  "(",  ")",  "[",  "]",  "{",  "}", ";", ",", ".", ":"};
+#define OPCOUNT 27
+static char delimiters[OPCOUNT][4] = {"->>", "->", "=>", "==", "!=", "&&", "||",
+                                      ">=",  "<=", "<",  ">",  "+",  "-",  "/",
+                                      "*",   "%",  "!",  "(",  ")",  "[",  "]",
+                                      "{",   "}",  ";",  ",",  ".",  ":"};
 
 static token_kind_t dels_kinds[] = {
-    T_BIGARR,     T_EQ,         T_DIFF,        T_AND,          T_OR,
-    T_GRTR_EQ,    T_LSSR_EQ,    T_LSSR,        T_GRTR,         T_PLUS,
-    T_MINUS,      T_DIV,        T_MULT,        T_MODULO,       T_NOT,
-    T_OPENPAREN,  T_CLOSEPAREN, T_OPENBRACKET, T_CLOSEBRACKET, T_OPENBRACE,
-    T_CLOSEBRACE, T_SEMICOLON,  T_COMMA,       T_DOT,          T_COLON};
+    T_SMALLARRLARGE, T_SMALLARR,  T_BIGARR,     T_EQ,         T_DIFF,
+    T_AND,           T_OR,        T_GRTR_EQ,    T_LSSR_EQ,    T_LSSR,
+    T_GRTR,          T_PLUS,      T_MINUS,      T_DIV,        T_MULT,
+    T_MODULO,        T_NOT,       T_OPENPAREN,  T_CLOSEPAREN, T_OPENBRACKET,
+    T_CLOSEBRACKET,  T_OPENBRACE, T_CLOSEBRACE, T_SEMICOLON,  T_COMMA,
+    T_DOT,           T_COLON};
 
 bool step_delim(lexer_t *l) {
   location_t loc = l->current_loc;
-  for (size_t i = 0; i < OPCOUNT; ++i) {
+  for (size_t i = 0; i < OPCOUNT; i++) {
+    if (!i) {
+      printf("%s\n", delimiters[i]);
+    }
     if (matches_string(*l, delimiters[i])) {
       token_t tok;
       for (size_t k = 0; k < strlen(delimiters[i]); k++) {
