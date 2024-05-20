@@ -21,6 +21,7 @@ void __internal_resize_dyn_array(__internal_dyn_array_t *arr);
 void *__internal_dyn_get(__internal_dyn_array_t arr, size_t index);
 
 #define ul_dyn_get(arr, index, type) (*(type *)__internal_dyn_get(arr, index))
+#define ul_dyn_get_ptr(arr, index, type) (type) __internal_dyn_get(arr, index)
 
 __internal_dyn_array_t __internal_new_dyn_array(size_t size, int is_ptr);
 

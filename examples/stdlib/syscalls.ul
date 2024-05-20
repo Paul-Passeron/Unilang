@@ -14,27 +14,27 @@
  * @returns the number of bytes successfully written
             to 'fd'
 **/
-let write(fd: i32, buf: cstr, count: u64): i64 => {
+let syswrite(fd: i32, buf: cstr, count: u64): i64 => {
   return syscall3(1, fd, buf, count);
 }
 
 /**
- * read - read syscall, reads 'count' bytes from
+ * sysread - read syscall, reads 'count' bytes from
  *        'fd' file descriptor
  * @param fd: file descriptor to write bytes to
  * @param count: number of bytes to write from 'buf'
  * @returns: the string of length 'count' read from 'fd' 
 **/
-let read(fd: i32, count: u64): string => {
+let sysread(fd: i32, count: u64): string => {
   let s: string => new_string(count);
   syscall3(0, fd, s.contents, count);
   return s;
 }
 
-let open(filename: string, flags: u32, mode: u32): u32 => {
+let sysopen(filename: string, flags: u32, mode: u32): u32 => {
   return syscall3(2, string_to_cstr(filename), flags, mode);
 }
 
-let close(fd: u32): void => {
+let sysclose(fd: u32): void => {
   syscall1(3, fd);
 }

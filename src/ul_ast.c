@@ -271,6 +271,20 @@ ast_t new_assignement(location_t loc, ast_t expr, ast_t value) {
   return res;
 }
 
+ast_t new_while(location_t loc, ast_t cond, ast_t stmt) {
+  unsigned int old_arena = get_arena();
+  set_arena(parser_arena);
+  ast_t res = alloc(sizeof(struct ast_struct_t), 1);
+  ast_while_t *w = alloc(sizeof(ast_while_t), 1);
+  w->condition = cond;
+  w->stmt = stmt;
+  res->kind = A_WHILE;
+  res->as.whilestmt = w;
+  res->loc = loc;
+  set_arena(old_arena);
+  return res;
+}
+
 const char *ast_kind_to_str(ast_kind_t kind) {
   switch (kind) {
   case A_STRLIT:

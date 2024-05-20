@@ -7,8 +7,8 @@
 #define PARSER_H
 
 #include "../include/token.h"
-#include "../include/ul_ast.h"
 #include "../include/ul_dyn_arrays.h"
+#include "ul_ast.h"
 #include <stdbool.h>
 
 typedef struct parser_t {

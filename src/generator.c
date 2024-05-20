@@ -118,6 +118,7 @@ void set_generator_target(const char *target) {
   generator.target = f;
   generator.failed = false;
 }
+
 type_t get_type_of_expr(ast_t expr);
 
 type_t get_type_by_name(const char *name, bool *found) {
@@ -131,7 +132,34 @@ type_t get_type_by_name(const char *name, bool *found) {
       return t;
     }
   }
+  printf("%s\n", name);
+  ul_assert(false, "COULD NOT FIND TYPE BY NAME");
+
   return (type_t){0};
+}
+
+bool is_int_type(char *name) {
+  if (streq(name, "i8"))
+    return true;
+  if (streq(name, "u8"))
+    return true;
+  if (streq(name, "i16"))
+    return true;
+  if (streq(name, "u16"))
+    return true;
+  if (streq(name, "i32"))
+    return true;
+  if (streq(name, "u32"))
+    return true;
+  if (streq(name, "i64"))
+    return true;
+  if (streq(name, "u64"))
+    return true;
+  if (streq(name, "char"))
+    return true;
+  if (streq(name, "bool"))
+    return true;
+  return false;
 }
 
 type_t get_type_of_var(const char *name, bool *found_name, bool *found_type) {
@@ -142,7 +170,8 @@ type_t get_type_of_var(const char *name, bool *found_name, bool *found_type) {
       return get_type_by_name(v.type, found_type);
     }
   }
-
+  printf("%s\n", name);
+  ul_assert(false, "COULD NOT FIND TYPE BY VAR");
   return (type_t){0};
 }
 
@@ -157,7 +186,9 @@ void destroy_generator(void) {
 bool has_failed(void) { return generator.failed; }
 
 void generate_forward(ast_t prog);
+void generate_methods(ast_t prog);
 
+bool type_has_constructor(char *name);
 void generate_program(ast_t prog) {
   ul_logger_info("Generating Program");
   generate_prolog();
@@ -167,9 +198,11 @@ void generate_program(ast_t prog) {
     ast_t stmt = dyn_ast_get(contents, i);
     generate_statement(stmt);
   }
+  generate_methods(prog);
 }
 
 void generate_type(ast_t type) {
+  // IF()
   bool found = false;
   char *name = type->as.iden->content;
   type_t t = get_type_by_name(name, &found);
@@ -189,14 +222,13 @@ void generate_fundef_param(ast_t fundef_param) {
   ul_logger_info("Generating Fundef param");
 
   ast_fundef_param_t f = *fundef_param->as.fundef_param;
+  // printf("TYPE IS %p\n", f.type);
   generate_type(f.type);
   gprintf(" %s", f.name);
   var_array_t *vs = &generator.context.vars;
   var_t var;
-  // var.name = f.name;
   strcpy(var.name, f.name);
   if (f.type->kind == A_IDEN) {
-    // var.type = f.type->as.iden->content;
     strcpy(var.type, f.type->as.iden->content);
   } else {
     ul_assert(false, "WTF");
@@ -265,6 +297,12 @@ void generate_vardef(ast_t vardef) {
     bool found;
     type_t t = get_type_by_name(v.type->as.iden->content, &found);
     ul_assert_location(vardef->loc, found, "Type problem");
+    var_array_t *vs = &generator.context.vars;
+    var_t var;
+    strcpy(var.name, v.name);
+    // var.type = f.type->as.iden->content;
+    strcpy(var.type, v.type->as.iden->content);
+    ul_dyn_append(vs, var);
     if (!t.is_builtin && t.kind == TY_STRUCT) {
       generate_type(v.type);
       gprintf(" %s;", v.name);
@@ -275,6 +313,9 @@ void generate_vardef(ast_t vardef) {
       gprintf("= alloc(sizeof(struct __ul_internal_%s), 1);", t.name);
       gprintf("*%s=(struct __ul_internal_%s){0};", v.name, t.name);
       gprintf("set_arena(old_arena);");
+      if (type_has_constructor(t.name)) {
+        gprintf("__internal_%s_%s(%s);", t.name, t.name, v.name);
+      }
       gprintf("}");
     }
   }
@@ -332,15 +373,47 @@ void generate_operator(token_kind_t op) {
   }
 }
 
+void generate_expression_as_string(ast_t stmt) {
+  type_t t = get_type_of_expr(stmt);
+  char *tname = t.name;
+  if (streq(tname, "string"))
+    generate_expression(stmt);
+  else {
+    if (is_int_type(tname)) {
+      gprintf("__UL_string_of_%s_int(", t.is_signed ? "signed" : "unsigned");
+      generate_expression(stmt);
+      gprintf(")");
+    } else {
+      gprintf("__UL_string_of_%s(", tname);
+      generate_expression(stmt);
+      gprintf(")");
+    }
+  }
+}
+
 void generate_binop(ast_t binop) {
   ast_binop_t b = *binop->as.binop;
   type_t tl = get_type_of_expr(b.left);
   type_t tr = get_type_of_expr(b.right);
   if ((streq(tl.name, "string") || streq(tr.name, "string")) && b.op == T_EQ) {
     gprintf("__UL_streq(");
-    generate_expression(b.left);
+    generate_expression_as_string(b.left);
     gprintf(",");
-    generate_expression(b.right);
+    generate_expression_as_string(b.right);
+    gprintf(")");
+  } else if ((streq(tl.name, "string") || streq(tr.name, "string")) &&
+             b.op == T_DIFF) {
+    gprintf("!__UL_streq(");
+    generate_expression_as_string(b.left);
+    gprintf(",");
+    generate_expression_as_string(b.right);
+    gprintf(")");
+  } else if ((streq(tl.name, "string") || streq(tr.name, "string")) &&
+             b.op == T_PLUS) {
+    gprintf("__UL_addstr(");
+    generate_expression_as_string(b.left);
+    gprintf(",");
+    generate_expression_as_string(b.right);
     gprintf(")");
   } else {
     gprintf("(");
@@ -390,28 +463,30 @@ type_t get_type_of_expr(ast_t expr) {
   case A_ACCESS: {
     ast_access_t a = *expr->as.access;
     type_t t = get_type_of_expr(a.object);
-    if (streq(t.name, "string")) {
-      if (a.field->kind == A_FUNCALL) {
+    if (a.field->kind == A_FUNCALL) {
+      if (streq(t.name, "string")) {
         if (streq(a.field->as.funcall->name, "append")) {
           return get_type_by_name("string", NULL);
         } else
           ul_assert_location(expr->loc, false,
                              "Cannot get type of expression yet !\n");
       } else {
-        if (streq(a.field->as.iden->content, "contents")) {
-          return get_type_by_name("cstr", NULL);
-        } else
-          return get_type_by_name("u32", NULL);
-      }
-    } else {
-      for (size_t i = 0; i < ul_dyn_length(t.members_names); i++) {
-        char *name = dyn_str_get(t.members_names, i);
-        // TODO: add support for methods
-        if (streq(name, a.field->as.iden->content)) {
-          return get_type_by_name(dyn_str_get(t.members_types, i), NULL);
+        for (size_t i = 0; i < ul_dyn_length(t.members_names); i++) {
+
+          char *name = dyn_str_get(t.members_names, i);
+          // TODO: add support for methods
+          if (streq(name, a.field->as.iden->content)) {
+            return get_type_by_name(dyn_str_get(t.members_types, i), NULL);
+          }
         }
+        ul_assert_location(expr->loc, false, "No field matches");
       }
-      ul_assert_location(expr->loc, false, "No field matches");
+
+    } else {
+      if (streq(a.field->as.iden->content, "contents")) {
+        return get_type_by_name("cstr", NULL);
+      } else
+        return get_type_by_name("u32", NULL);
     }
     break;
   }
@@ -445,23 +520,36 @@ void generate_access(ast_t access) {
     generate_expression(a.object);
     gprintf("->%s", a.field->as.iden->content);
   } else {
-    if (streq(t.name, "string")) {
-      ast_funcall_t f = *a.field->as.funcall;
-      if (streq(f.name, "append")) {
-        gprintf("__UL_append_string(");
-        generate_expression(a.object);
-        gprintf(",");
-        for (size_t i = 0; i < ul_dyn_length(f.args); ++i) {
-          if (i > 0) {
-            gprintf(", ");
-          }
-          ast_t arg = dyn_ast_get(f.args, i);
-          generate_expression(arg);
+    ast_funcall_t f = *a.field->as.funcall;
+    if (streq(f.name, "append")) {
+      // if (streq(t.name, "string")) {
+      gprintf("__UL_append_string(");
+      generate_expression(a.object);
+      gprintf(",");
+      for (size_t i = 0; i < ul_dyn_length(f.args); ++i) {
+        if (i > 0) {
+          gprintf(", ");
         }
-        gprintf(")");
+        ast_t arg = dyn_ast_get(f.args, i);
+        generate_expression(arg);
       }
+      gprintf(")");
+      // }
     } else {
-      ul_assert(false, "Metdhods are not implemented yet !");
+      gprintf("__internal_%s_%s(", t.name, f.name);
+      size_t i;
+      for (i = 0; i < ul_dyn_length(f.args); ++i) {
+        if (i > 0) {
+          gprintf(", ");
+        }
+        ast_t arg = dyn_ast_get(f.args, i);
+        generate_expression(arg);
+      }
+      if (i > 0) {
+        gprintf(", ");
+      }
+      generate_expression(a.object);
+      gprintf(")");
     }
   }
 }
@@ -523,7 +611,9 @@ void generate_expression(ast_t stmt) {
     break;
   }
   ul_logger_erro(ast_kind_to_str(stmt->kind));
-  ul_assert(false, "This kind of expression is not implemented yet");
+  // printf("%d", stmt->kind);
+  ul_assert_location(stmt->loc, false,
+                     "This kind of expression is not implemented yet");
 }
 
 unsigned int loops_n = 0;
@@ -580,12 +670,36 @@ void generate_tdef(ast_t tdef) {
   ast_tdef_t t = *tdef->as.tdef;
   // gprintf("typedef struct __ul_internal%s %s")
   gprintf("typedef struct __ul_internal_%s {", t.type.name);
-  for (size_t i = 0; i < ul_dyn_length(t.type.members_names); i++) {
+  size_t i;
+  for (i = 0; i < ul_dyn_length(t.type.members_names); i++) {
     char *name = dyn_str_get(t.type.members_names, i);
     char *type = dyn_str_get(t.type.members_types, i);
     gprintf("%s %s;", type, name);
   }
+  if (i == 0) {
+    gprintf("char __internal_dummy;");
+  }
   gprintf("} __ul_internal_%s;", t.type.name);
+}
+
+bool type_has_constructor(char *name) {
+  bool found;
+  type_t t = get_type_by_name(name, &found);
+  char constructor[128] = {0};
+  strcat(constructor, "__internal_");
+  strcat(constructor, name);
+  strcat(constructor, "_");
+  strcat(constructor, name);
+  if (!found)
+    return false;
+  for (size_t i = 0; i < ul_dyn_length(t.methods); i++) {
+    ast_t meth = dyn_ast_get(t.methods, i);
+    ast_fundef_t m = *meth->as.fundef;
+    if (streq(m.name, constructor)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void generate_assign(ast_t assign) {
@@ -594,6 +708,14 @@ void generate_assign(ast_t assign) {
   gprintf("=");
   generate_expression(a.value);
   gprintf(";");
+}
+
+void generate_while(ast_t stmt) {
+  ast_while_t w = *stmt->as.whilestmt;
+  gprintf("while(");
+  generate_expression(w.condition);
+  gprintf(")");
+  generate_statement(w.stmt);
 }
 
 void generate_statement(ast_t stmt) {
@@ -635,6 +757,9 @@ void generate_statement(ast_t stmt) {
     generate_assign(stmt);
     // ul_assert(false, "");
   } break;
+  case A_WHILE: {
+    generate_while(stmt);
+  } break;
   default:
     found = false;
     break;
@@ -646,6 +771,7 @@ void generate_statement(ast_t stmt) {
   // printf("%ld %ld\n", ul_dyn_length(generator.context.vars), l);
 }
 void generate_forward(ast_t prog) {
+  ul_logger_info("Generating Forward definitions");
   ast_array_t contents = prog->as.prog->prog;
   for (size_t i = 0; i < ul_dyn_length(contents); i++) {
     ast_t stmt = dyn_ast_get(contents, i);
@@ -654,9 +780,30 @@ void generate_forward(ast_t prog) {
       ul_dyn_append(&generator.context.types, t.type);
       gprintf("typedef struct __ul_internal_%s * %s;", t.type.name,
               t.type.name);
+      for (size_t m = 0; m < ul_dyn_length(t.type.methods); m++) {
+        ast_t fdef = dyn_ast_get(t.type.methods, m);
+        ast_fundef_t f = *fdef->as.fundef;
+        generate_type(f.return_type);
+        gprintf(" %s(", f.name);
+        size_t j;
+        for (j = 0; j < ul_dyn_length(f.params); ++j) {
+          if (j > 0) {
+            gprintf(", ");
+          }
+          ast_t param = dyn_ast_get(f.params, j);
+          generate_fundef_param(param);
+        }
+        if (j > 0) {
+          gprintf(", ");
+        }
+        gprintf("%s this", t.type.name);
+        gprintf(");");
+      }
     }
   }
+
   for (size_t i = 0; i < ul_dyn_length(contents); i++) {
+
     ast_t stmt = dyn_ast_get(contents, i);
     if (stmt->kind == A_FUNDEF) {
       ast_fundef_t f = *stmt->as.fundef;
@@ -664,14 +811,61 @@ void generate_forward(ast_t prog) {
         continue;
       generate_type(f.return_type);
       gprintf(" %s%s(", FUN_PREFIX, f.name);
-      for (size_t i = 0; i < ul_dyn_length(f.params); ++i) {
-        if (i > 0) {
+      for (size_t k = 0; k < ul_dyn_length(f.params); ++k) {
+        if (k > 0) {
           gprintf(", ");
         }
-        ast_t param = dyn_ast_get(f.params, i);
+        ast_t param = dyn_ast_get(f.params, k);
         generate_fundef_param(param);
       }
       gprintf(");");
+    }
+  }
+}
+
+void generate_methods(ast_t prog) {
+
+  ul_logger_info("Generating methods definitions");
+  ast_array_t contents = prog->as.prog->prog;
+  for (size_t i = 0; i < ul_dyn_length(contents); i++) {
+    ast_t stmt = dyn_ast_get(contents, i);
+    if (stmt->kind == A_TDEF) {
+      ast_tdef_t t = *stmt->as.tdef;
+      for (size_t m = 0; m < ul_dyn_length(t.type.methods); m++) {
+        size_t l = ul_dyn_length(generator.context.vars);
+        ast_t fdef = dyn_ast_get(t.type.methods, m);
+        ast_fundef_t f = *fdef->as.fundef;
+        generate_type(f.return_type);
+        gprintf(" %s(", f.name);
+        size_t j;
+        for (j = 0; j < ul_dyn_length(f.params); ++j) {
+          if (j > 0) {
+            gprintf(", ");
+          }
+          ast_t param = dyn_ast_get(f.params, j);
+          generate_fundef_param(param);
+        }
+        if (j > 0) {
+          gprintf(", ");
+        }
+        gprintf("%s this", t.type.name);
+        var_array_t *vs = &generator.context.vars;
+        var_t var;
+        strcpy(var.name, "this");
+        strcpy(var.type, t.type.name);
+        ul_dyn_append(vs, var);
+
+        gprintf("){\n");
+        for (size_t i = 0; i < ul_dyn_length(f.body); ++i) {
+          ast_t stmt = dyn_ast_get(f.body, i);
+          generate_statement(stmt);
+          gprintf("\n");
+        }
+        gprintf("}\n");
+        while (ul_dyn_length(generator.context.vars) > l) {
+          ul_dyn_destroy_last(&generator.context.vars);
+        }
+      }
     }
   }
 }

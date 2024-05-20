@@ -13,7 +13,7 @@
  * @return: void
 **/
 let putchar(c: char): void => {
-  write(1, string_to_cstr(char_to_string(c)), 1);
+  syswrite(1, string_to_cstr(char_to_string(c)), 1);
 }
 
 /**
@@ -22,7 +22,7 @@ let putchar(c: char): void => {
  * @return: void
 **/
 let print(s: string): void => {
-  write(1, s.contents, s.length);
+  syswrite(1, s.contents, s.length);
 }
 
 /**
@@ -31,7 +31,7 @@ let print(s: string): void => {
  * @return: void
 **/
 let print_num(n: i32): void => {
-  if( n < 0) => {
+  if (n < 0) => {
     putchar('-');
     n => 0-n;
   }
@@ -58,21 +58,35 @@ let println(s: string): void => {
 struct file => {
   fd: u64,
   mode: i8,
+
+  /**
+  * open - Opens file
+  * @param path: the path to the file
+  * @param flag: the flags to open the file, this defines the behavior of the returned handle
+  * @return: void
+  **/
+  let open(path: string, flags: u32): void => {
+    this.fd => sysopen(path, flags, 1877);
+    this.mode => flags;
+  },
+
+  /**
+  * close - Closes file
+  * @return: void
+  **/
+  let close() : void => {
+    sysclose(this.fd);
+  },
+
+  let print(s: string): void => {
+    // print("YES");
+    syswrite(this.fd, s.contents, s.length);
+  }
+
 }
 
-/**
- * open_file - Opens a file and returns its handle
- * @param path: the path to the file
- * @param flag: the flags to open the file, this defines the behavior of the returned handle
- * @return: the file handle (file)
-**/
-let open_file(path: string, flags: u32): file => {
-  let fd: i32 => open(path, flags, 1877);
-  let res: file;
-  res.fd => fd;
-  res.mode => flags;
-  return res;
-}
+
+
 
 /**
  * fprint - Prints a string to a file
@@ -80,15 +94,5 @@ let open_file(path: string, flags: u32): file => {
  * @param s: the string to print
  * @return: void
 **/
-let fprint(f: file, s: string): void => {
-  write(f.fd, s.contents, s.length);
-}
 
-/**
- * close_file - Closes a file
- * @param file: the handle of the file
- * @return: void
-**/
-let close_file(f: file): void => {
-  close(f.fd);
-}
+

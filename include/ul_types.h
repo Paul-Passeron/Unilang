@@ -20,6 +20,7 @@ typedef struct type_t {
   type_kind_t kind;
   str_array_t members_types; // Don't initialize for primitive types
   str_array_t members_names; // Don't initialize for primitive types
+  ast_array_t methods;       // Don't initialize for primitive types
   bool is_builtin;
   bool is_signed;
   size_t size;

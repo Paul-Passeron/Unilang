@@ -5,9 +5,11 @@
  * Paul Passeron <paul.passeron2@gmail.com>
 **/
 
+
 /**
  * streq - Checks if two strings are equals
- * 
+ * @param s1, s2: The strings to check
+ * @return: true if s1 = s2 and false otherwise (bool) 
 **/
 let streq(s1: string, s2: string): bool => {
   if (s1.length != s2.length) => return 0;
@@ -15,4 +17,59 @@ let streq(s1: string, s2: string): bool => {
     if (s1[i] != s2[i]) => return 0;
   }
   return 1;
+}
+
+/**
+ * addstr - operator overload for '+' with two strings
+ * @param s1: first substring of the resulting string 
+ * @param s2: second substring of the resulting string 
+ * @return: a new string that is the concatenation of
+            's1' and 's2' (string)
+**/
+let addstr(s1: string, s2: string): string => {
+  return "".append(s1).append(s2);
+}
+
+/**
+ * string_of_signed_int - Converts an i64 to a string
+ * @param n: The number to convert
+ * @return: A new string that is a binary representation of 'n' 
+**/
+let string_of_signed_int(n: i64): string => {
+  if(n == 0) => return "0";
+  let minus: string => "";
+  let s: string => "";
+  let s2: string => "";
+  if(n < 0) => {
+    minus.append("-");
+    n => 0 - n;
+  }
+  
+  while (n > 0) => {
+    s2.append(char_to_string(n % 10 + '0'));
+    n => n / 10;
+  }
+  loop i: s2.length - 1 ->> 0 => {
+    s.append(char_to_string(s2[i]));
+  }
+  return minus + s;
+}
+
+
+/**
+ * string_of_unsigned_int - Converts an u64 to a string
+ * @param n: The number to convert
+ * @return: A new string that is a binary representation of 'n' 
+**/
+let string_of_unsigned_int(n: u64): string => {
+  let s: string => "";
+  let s2: string => "";
+  while (n > 0) => {
+    s2.append(char_to_string(n % 10 + '0'));
+    n => n / 10;
+  }
+  loop i: s2.length - 1 ->> 0 => {
+    s.append(char_to_string(s2[i]));
+  }
+  return s;
 }

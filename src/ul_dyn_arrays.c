@@ -11,7 +11,7 @@ __internal_dyn_array_t __internal_new_dyn_array(size_t size, int is_ptr) {
   res.length = 0;
   res.capacity = __INTERNAL_DYN_ARRAY_INIT_CAP * res.stride;
   unsigned int previous_arena = get_arena();
-  res.arena = new_arena(res.capacity);
+  res.arena = new_arena(res.capacity * 2);
   set_arena(res.arena);
   res.contents = alloc(res.capacity, 1);
   set_arena(previous_arena);
@@ -87,5 +87,5 @@ size_t ul_dyn_length(__internal_dyn_array_t arr) { return arr.length; }
 
 void ul_dyn_destroy_last(__internal_dyn_array_t *arr) {
   arr->length--;
-  memset((char *)arr->contents + arr->length * arr->stride, 0, arr->stride);
+  // memset((char *)arr->contents + arr->length * arr->stride, 0, arr->stride);
 }

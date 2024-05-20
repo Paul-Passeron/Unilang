@@ -290,6 +290,7 @@ ast_t parse_fundef(parser_t *p) {
   consume_parser(p);
 
   ast_t ret_type = parse_identifier(p);
+  // printf("RET TYPE IS %p\n", ret_type);
 
   expect(*p, T_BIGARR);
   consume_parser(p);
@@ -345,13 +346,33 @@ ast_t parse_tdef_struct(parser_t *p) {
   consume_parser(p);
   str_array_t fields = new_str_dyn();
   str_array_t types = new_str_dyn();
+  ast_array_t methods = new_ast_dyn();
   while (peek_kind(*p) != T_CLOSEBRACE) {
-    expect(*p, T_WORD);
-    ul_dyn_append(&fields, consume_parser(p).lexeme);
-    expect(*p, T_COLON);
-    consume_parser(p);
-    expect(*p, T_WORD);
-    ul_dyn_append(&types, consume_parser(p).lexeme);
+    if (is_fundef(*p)) {
+      // ul_assert(false, "Method definition is not implemetned yet !");
+      ast_t fdef = parse_fundef(p);
+      unsigned int old_arena = get_arena();
+      char prefix[256] = "__internal_";
+      strcat(prefix, type_name);
+      strcat(prefix, "_");
+      unsigned int arena =
+          new_arena(strlen(fdef->as.fundef->name) + sizeof(prefix));
+      set_arena(arena);
+      char *mangled_name =
+          alloc_zero(strlen(fdef->as.fundef->name) + sizeof(prefix), 1);
+      strcpy(mangled_name, prefix);
+      strcat(mangled_name, fdef->as.fundef->name);
+      set_arena(old_arena);
+      fdef->as.fundef->name = mangled_name;
+      ul_dyn_append(&methods, fdef);
+    } else {
+      expect(*p, T_WORD);
+      ul_dyn_append(&fields, consume_parser(p).lexeme);
+      expect(*p, T_COLON);
+      consume_parser(p);
+      expect(*p, T_WORD);
+      ul_dyn_append(&types, consume_parser(p).lexeme);
+    }
     if (peek_kind(*p) != T_COMMA) {
       break;
     }
@@ -360,7 +381,7 @@ ast_t parse_tdef_struct(parser_t *p) {
   expect(*p, T_CLOSEBRACE);
   consume_parser(p);
   // TODO: actually calculates the size of type
-  type_t res = {{0}, TY_STRUCT, types, fields, false, false, 0};
+  type_t res = {{0}, TY_STRUCT, types, fields, methods, false, false, 0};
   strcpy(res.name, type_name);
   return new_tdef(loc, res);
 }
@@ -509,10 +530,16 @@ ast_t parse_returnstmt(parser_t *p) {
   return new_return(loc, expr);
 }
 ast_t parse_whilestmt(parser_t *p) {
-  (void)p;
-  ul_assert(false, "parse_whilestmt is not implemented yet !");
-  return NULL;
+  location_t loc = peek_loc(*p);
+  expect_lexeme(*p, "while");
+  consume_parser(p);
+  ast_t expr = parse_expression(p);
+  expect(*p, T_BIGARR);
+  consume_parser(p);
+  ast_t body = parse_statement(p);
+  return new_while(loc, expr, body);
 }
+
 ast_t parse_loop(parser_t *p) {
   expect_lexeme(*p, "loop");
   location_t loc = peek_loc(*p);

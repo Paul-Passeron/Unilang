@@ -1,7 +1,21 @@
-@include "stdlib/io.ul"
 @include "stdlib/string.ul"
+@include "stdlib/io.ul"
+
+struct test => {
+  s: string,
+  let test(): void => {
+    println("Called the constructor !");
+    this.s => "abcd";
+  },
+  let print(): void => {
+    println("Printing from test !");
+    println(this.s);
+  }
+}
 
 let entry(): void => {
- if ("a" == "b") => println("No");
- if ("a" == "a") => println("Yes");
+  let t: test;
+  // t.s => "";
+  t.s.append("aadfqrgrgaa");
+  t.print();
 } 
