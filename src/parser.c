@@ -148,7 +148,13 @@ ast_t parse_leaf(parser_t *p) {
     while (peek_kind(*p) == T_DOT) {
       location_t loc = peek_loc(*p);
       consume_parser(p);
-      ast_t f = parse_identifier(p);
+      ast_t f;
+      if (is_funcall(*p)) {
+        f = parse_funcall(p);
+      } else {
+        f = parse_identifier(p);
+      }
+
       res = new_access(loc, res, f);
     }
   } else if (tok.kind == T_STRLIT) {

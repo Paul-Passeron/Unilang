@@ -1,3 +1,4 @@
+#include <fcntl.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -171,6 +172,7 @@ void destroy_arena(unsigned int id) {
   free(__internal_arenas[id].contents);
   __internal_arenas[id] = (arena_t){0};
   __internal_arenas_popul[id] = false;
+  // printf("ID IS %d\n", id);
 }
 
 void set_arena(unsigned int id) {
@@ -235,41 +237,63 @@ void *alloc(size_t n, size_t s) {
 
 //
 
-typedef struct string {
+typedef struct __ul_internal_string {
   char *contents;
   size_t length;
   unsigned int arena; // why not ?
   // kinda like every object has its own arena to allocate things
-} string;
+} __ul_internal_string;
+
+typedef struct __ul_internal_string *string;
 
 string __internal_cstr_to_string(const char *contents) {
   size_t l = strlen(contents);
-  if (l == 0)
-    return (string){0};
   unsigned int old_arena = get_arena();
-  unsigned int arena = new_arena(l + 1);
+  unsigned int arena = new_arena(sizeof(__ul_internal_string) + l + 1);
   set_arena(arena);
+  string res = alloc(sizeof(__ul_internal_string), 1);
   char *str = alloc(l + 1, 1);
   memcpy(str, contents, l);
   str[l] = 0;
   set_arena(old_arena);
-  return (string){.contents = str, .length = l, .arena = arena};
+  *res = (__ul_internal_string){.contents = str, .length = l, .arena = arena};
+  return res;
 }
 
-char *__UL_string_to_cstr(string s) { return s.contents; }
-
-#define __UL_char_to_string(c)                                                 \
-  (string) { .contents = &c, .length = 1, .arena = 0 }
+char *__UL_string_to_cstr(string s) { return s->contents; }
 
 string __UL_new_string(u32 count) {
-  string res;
   unsigned int old_arena = get_arena();
-  res.arena = new_arena(count + 1);
-  set_arena(res.arena);
-  res.contents = alloc_zero(count + 1, 1);
-  res.length = count;
+  unsigned int arena = new_arena(sizeof(__ul_internal_string) + count + 1);
+  set_arena(arena);
+  string res = alloc(sizeof(__ul_internal_string), 1);
+  res->arena = arena;
+  res->contents = alloc_zero(count + 1, 1);
+  res->length = 0;
   set_arena(old_arena);
   return res;
+}
+
+string __UL_char_to_string(char c) {
+  string s = __UL_new_string(1);
+  s->contents[0] = c;
+  s->length = 1;
+  return s;
+}
+
+void __UL_append_string(string dest, string to_append) {
+  string s = __UL_new_string(dest->length + to_append->length + 1);
+  unsigned int old_arena = dest->arena;
+  for (size_t i = 0; i < dest->length; i++) {
+    s->contents[i] = dest->contents[i];
+    s->length++;
+  }
+  for (size_t i = 0; i < to_append->length; i++) {
+    s->contents[i + dest->length] = to_append->contents[i];
+    s->length++;
+  }
+  *dest = *s;
+  // destroy_arena(old_arena);
 }
 
 void __UL_entry();
@@ -296,6 +320,7 @@ int main(void) {
   __UL_entry();
   __UL_exit(0);
   return 0; // Not needed but used so that all compilers are happy
+  // O_TRUNC;
 }
 
 // End of Prologue

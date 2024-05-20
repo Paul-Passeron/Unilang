@@ -31,6 +31,10 @@ let print(s: string): void => {
  * @return: void
 **/
 let print_num(n: i32): void => {
+  if( n < 0) => {
+    putchar('-');
+    n => 0-n;
+  }
   let a: i32 => n / 10;
   if (a != 0) =>  {
     print_num(a);
@@ -56,18 +60,35 @@ struct file => {
   mode: i8,
 }
 
-let open_file(path: string, flags: u32, mode: u32): file => {
-  let fd: i32 => open(path, flags, mode);
+/**
+ * open_file - Opens a file and returns its handle
+ * @param path: the path to the file
+ * @param flag: the flags to open the file, this defines the behavior of the returned handle
+ * @return: the file handle (file)
+**/
+let open_file(path: string, flags: u32): file => {
+  let fd: i32 => open(path, flags, 1877);
   let res: file;
   res.fd => fd;
-  res.mode => mode;
+  res.mode => flags;
   return res;
 }
 
+/**
+ * fprint - Prints a string to a file
+ * @param file: the handle of the file
+ * @param s: the string to print
+ * @return: void
+**/
 let fprint(f: file, s: string): void => {
   write(f.fd, s.contents, s.length);
 }
 
+/**
+ * close_file - Closes a file
+ * @param file: the handle of the file
+ * @return: void
+**/
 let close_file(f: file): void => {
   close(f.fd);
 }

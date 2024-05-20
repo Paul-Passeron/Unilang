@@ -1,7 +1,12 @@
 @include "stdlib/io.ul"
 
 let entry(): void => {
-  let f: file => open_file("test", 65, 1877);
-  fprint(f,"Yes !");
+  let f: file => open_file("test",  1 | 512);
+  print_num(f.fd);
+  println("");
+  let s: string => "Yo";
+  s.append(" Dude !");
+  fprint(f, s);
   close_file(f);
+
 } 

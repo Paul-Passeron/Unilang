@@ -311,6 +311,12 @@ void generate_operator(token_kind_t op) {
   case T_OR:
     gprintf("||");
     break;
+  case T_LOG_OR:
+    gprintf("|");
+    break;
+  case T_LOG_AND:
+    gprintf("&");
+    break;
   default:
     break;
   }
@@ -374,13 +380,31 @@ type_t get_type_of_expr(ast_t expr) {
 
 void generate_access(ast_t access) {
   ast_access_t a = *access->as.access;
-  generate_expression(a.object);
   // Should do some checks here
   type_t t = get_type_of_expr(a.object);
-  if (streq(t.name, "string")) {
-    gprintf(".%s", a.field->as.iden->content);
-  } else {
+
+  if (a.field->kind == A_IDEN) {
+    generate_expression(a.object);
     gprintf("->%s", a.field->as.iden->content);
+  } else {
+    if (streq(t.name, "string")) {
+      ast_funcall_t f = *a.field->as.funcall;
+      if (streq(f.name, "append")) {
+        gprintf("__UL_append_string(");
+        generate_expression(a.object);
+        gprintf(",");
+        for (size_t i = 0; i < ul_dyn_length(f.args); ++i) {
+          if (i > 0) {
+            gprintf(", ");
+          }
+          ast_t arg = dyn_ast_get(f.args, i);
+          generate_expression(arg);
+        }
+        gprintf(")");
+      }
+    } else {
+      ul_assert(false, "Metdhods are not implemented yet !");
+    }
   }
 }
 
