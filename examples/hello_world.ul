@@ -1,12 +1,7 @@
 @include "stdlib/io.ul"
+@include "stdlib/string.ul"
 
 let entry(): void => {
-  let f: file => open_file("test",  1 | 512);
-  print_num(f.fd);
-  println("");
-  let s: string => "Yo";
-  s.append(" Dude !");
-  fprint(f, s);
-  close_file(f);
-
+ if ("a" == "b") => println("No");
+ if ("a" == "a") => println("Yes");
 } 

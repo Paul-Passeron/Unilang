@@ -39,7 +39,7 @@ let print_num(n: i32): void => {
   if (a != 0) =>  {
     print_num(a);
   }
-  putchar(n%10 + '0');
+  putchar(n % 10 + '0');
 }
 
 /**

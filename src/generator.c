@@ -22,6 +22,12 @@ const type_t U8_TYPE = {.name = "u8",
                         .kind = TY_PRIMITIVE,
                         .is_signed = false};
 
+const type_t BOOL_TYPE = {.name = "bool",
+                          .is_builtin = true,
+                          .size = 1,
+                          .kind = TY_PRIMITIVE,
+                          .is_signed = false};
+
 const type_t I8_TYPE = {.name = "i8",
                         .is_builtin = true,
                         .size = 1,
@@ -98,6 +104,7 @@ void set_generator_target(const char *target) {
   generator.context.vars = new_var_dyn();
   ul_dyn_append(&generator.context.types, CHAR_TYPE);
   ul_dyn_append(&generator.context.types, U8_TYPE);
+  ul_dyn_append(&generator.context.types, BOOL_TYPE);
   ul_dyn_append(&generator.context.types, I8_TYPE);
   ul_dyn_append(&generator.context.types, U16_TYPE);
   ul_dyn_append(&generator.context.types, I16_TYPE);
@@ -111,13 +118,16 @@ void set_generator_target(const char *target) {
   generator.target = f;
   generator.failed = false;
 }
+type_t get_type_of_expr(ast_t expr);
 
 type_t get_type_by_name(const char *name, bool *found) {
-  *found = false;
+  if (found != NULL)
+    *found = false;
   for (size_t i = 0; i < ul_dyn_length(generator.context.types); i++) {
     type_t t = dyn_type_get(generator.context.types, i);
     if (streq(t.name, name)) {
-      *found = true;
+      if (found != NULL)
+        *found = true;
       return t;
     }
   }
@@ -324,11 +334,21 @@ void generate_operator(token_kind_t op) {
 
 void generate_binop(ast_t binop) {
   ast_binop_t b = *binop->as.binop;
-  gprintf("(");
-  generate_expression(b.left);
-  generate_operator(b.op);
-  generate_expression(b.right);
-  gprintf(")");
+  type_t tl = get_type_of_expr(b.left);
+  type_t tr = get_type_of_expr(b.right);
+  if ((streq(tl.name, "string") || streq(tr.name, "string")) && b.op == T_EQ) {
+    gprintf("__UL_streq(");
+    generate_expression(b.left);
+    gprintf(",");
+    generate_expression(b.right);
+    gprintf(")");
+  } else {
+    gprintf("(");
+    generate_expression(b.left);
+    generate_operator(b.op);
+    generate_expression(b.right);
+    gprintf(")");
+  }
   //
 }
 
@@ -365,17 +385,55 @@ type_t get_type_of_expr(ast_t expr) {
   case A_IDEN: {
     bool found_name;
     bool found_type;
-    if (expr->kind == A_IDEN) {
-      return get_type_of_var(expr->as.iden->content, &found_name, &found_type);
-    } else {
-      ul_assert(false, "Cannot get type of expression yet !\n");
-      return (type_t){0};
-    }
+    return get_type_of_var(expr->as.iden->content, &found_name, &found_type);
   }
+  case A_ACCESS: {
+    ast_access_t a = *expr->as.access;
+    type_t t = get_type_of_expr(a.object);
+    if (streq(t.name, "string")) {
+      if (a.field->kind == A_FUNCALL) {
+        if (streq(a.field->as.funcall->name, "append")) {
+          return get_type_by_name("string", NULL);
+        } else
+          ul_assert_location(expr->loc, false,
+                             "Cannot get type of expression yet !\n");
+      } else {
+        if (streq(a.field->as.iden->content, "contents")) {
+          return get_type_by_name("cstr", NULL);
+        } else
+          return get_type_by_name("u32", NULL);
+      }
+    } else {
+      for (size_t i = 0; i < ul_dyn_length(t.members_names); i++) {
+        char *name = dyn_str_get(t.members_names, i);
+        // TODO: add support for methods
+        if (streq(name, a.field->as.iden->content)) {
+          return get_type_by_name(dyn_str_get(t.members_types, i), NULL);
+        }
+      }
+      ul_assert_location(expr->loc, false, "No field matches");
+    }
+    break;
+  }
+  case A_BINOP: {
+    return get_type_of_expr(expr->as.binop->left);
+  } break;
+  case A_INDEX: {
+    type_t t = get_type_of_expr(expr->as.index->value);
+    if (streq(t.name, "cstr") || streq(t.name, "string")) {
+      return get_type_by_name("char", NULL);
+    } else {
+      ul_assert_location(expr->loc, false,
+                         "Cannot index other types than \'cstr\' and "
+                         "\'string\' for the moment.");
+    }
+  } break;
   default:
-    ul_assert(false, "Cannot get type of expression yet !\n");
+    ul_assert_location(expr->loc, false,
+                       "Cannot get type of expression yet !\n");
     return (type_t){0};
   }
+  return (type_t){0};
 }
 
 void generate_access(ast_t access) {
@@ -414,7 +472,12 @@ void generate_index(ast_t index) {
   if (streq(t.name, "string")) {
     gprintf("(");
     generate_expression(i.value);
-    gprintf(").contents[");
+    gprintf(")->contents[");
+    generate_expression(i.index);
+    gprintf("]");
+  } else if (streq(t.name, "cstr")) {
+    generate_expression(i.value);
+    gprintf("[");
     generate_expression(i.index);
     gprintf("]");
   }
@@ -452,7 +515,7 @@ void generate_expression(ast_t stmt) {
     return;
   }
   case A_INDEX: {
-    ul_assert(false, "yes");
+    // ul_assert(false, "yes");
     generate_index(stmt);
     return;
   }
@@ -490,6 +553,10 @@ void generate_loop(ast_t loop) {
 
   generate_statement(l.stmt);
   gprintf("}");
+  var_t var;
+  strcpy(var.name, l.varname);
+  strcpy(var.type, "i32");
+  ul_dyn_append(&generator.context.vars, var);
   loops_n--;
 }
 

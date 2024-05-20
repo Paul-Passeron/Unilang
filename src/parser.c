@@ -145,18 +145,7 @@ ast_t parse_leaf(parser_t *p) {
   } else if (tok.kind == T_WORD) {
     ul_logger_info_location(tok.location, "parsing leaf as identifier");
     res = parse_identifier(p);
-    while (peek_kind(*p) == T_DOT) {
-      location_t loc = peek_loc(*p);
-      consume_parser(p);
-      ast_t f;
-      if (is_funcall(*p)) {
-        f = parse_funcall(p);
-      } else {
-        f = parse_identifier(p);
-      }
 
-      res = new_access(loc, res, f);
-    }
   } else if (tok.kind == T_STRLIT) {
     ul_logger_info_location(tok.location, "parsing leaf as strlit");
     res = parse_strlit(p);
@@ -168,6 +157,18 @@ ast_t parse_leaf(parser_t *p) {
     res = parse_charlit(p);
   }
   ul_assert_location(tok.location, res != NULL, "Could not parse leaf");
+  while (peek_kind(*p) == T_DOT) {
+    location_t loc = peek_loc(*p);
+    consume_parser(p);
+    ast_t f;
+    if (is_funcall(*p)) {
+      f = parse_funcall(p);
+    } else {
+      f = parse_identifier(p);
+    }
+
+    res = new_access(loc, res, f);
+  }
   tok = peek_parser(*p);
   if (tok.kind != T_OPENBRACKET)
     return res;
@@ -177,7 +178,20 @@ ast_t parse_leaf(parser_t *p) {
   ast_t expr = parse_expression(p);
   expect(*p, T_CLOSEBRACKET);
   consume_parser(p);
-  return new_index(loc, res, expr);
+  res = new_index(loc, res, expr);
+  while (peek_kind(*p) == T_DOT) {
+    location_t loc = peek_loc(*p);
+    consume_parser(p);
+    ast_t f;
+    if (is_funcall(*p)) {
+      f = parse_funcall(p);
+    } else {
+      f = parse_identifier(p);
+    }
+
+    res = new_access(loc, res, f);
+  }
+  return res;
 }
 
 bool is_kind_op(token_kind_t t) { return get_precedence(t) != -1; }

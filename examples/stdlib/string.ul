@@ -1,0 +1,18 @@
+/**
+ * string.ul
+ * Copyright (C) Paul Passeron
+ * Unilang Standard Library String 
+ * Paul Passeron <paul.passeron2@gmail.com>
+**/
+
+/**
+ * streq - Checks if two strings are equals
+ * 
+**/
+let streq(s1: string, s2: string): bool => {
+  if (s1.length != s2.length) => return 0;
+  loop i: 0 -> s1.length => {
+    if (s1[i] != s2[i]) => return 0;
+  }
+  return 1;
+}
