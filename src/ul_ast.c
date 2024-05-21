@@ -3,7 +3,6 @@
 
 #include "../include/ul_ast.h"
 #include "../include/ul_allocator.h"
-#include "../include/ul_assert.h"
 
 extern unsigned int parser_arena;
 
