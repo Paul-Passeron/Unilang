@@ -45,3 +45,11 @@ let sysclose(fd: u32): void => {
 let syscreate(filename: string, mode: u32): u32 => {
   return syscall2(85, filename.contents, mode);
 }
+
+let sysstat(path: string, s: stat): u32 => {
+  return syscall2(4, path.contents, s);
+}
+
+// let sysfstat(fd: i32, s: stat): u32 => {
+//   return syscall2(fd, s);
+// }

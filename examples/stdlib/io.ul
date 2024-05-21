@@ -58,12 +58,37 @@ let o_wronly: i32 => 1;
 let o_creat: i32 => 64;
 
 
+struct stat => {
+  stat_dev: u64,
+  stat_ino: u64,
+  stat_nlink: u64,
+  stat_mode: u32,
+  stat_uid: u32,
+  stat_gid: u32,
+  pad0: i32,
+  stat_rdev: u64,
+  stat_size: i64,
+  stat_blksize: i64,
+  stat_blocks: i64,
+  stat_atime: i64,
+  stat_atime_nsec: i64,
+  stat_mtime: i64,
+  stat_mtime_nsec: i64,
+  stat_ctime: i64,
+  stat_ctime_nsec: i64,
+  glibc_reserved0: i64,
+  glibc_reserved2: i64,
+  glibc_reserved3: i64,
+} 
+
+
 /**
  * File struct, used as a handle when dealing with files
 **/
 struct file => {
   fd: u64,
   mode: i8,
+  filename: string,
   is_valid: bool,
 
   /**
@@ -74,6 +99,7 @@ struct file => {
   **/
   let open(path: string, omode: string): void => {
     this.is_valid => 1;
+    this.filename => path;
     if omode == "w" => {
       let mode: i32 => 0644;
       this.fd => syscreate(path, mode);
@@ -105,6 +131,7 @@ struct file => {
   let close() : void => {
     if this.is_valid =>
       sysclose(this.fd);
+    this.is_valid => 0;
   },
 
 
@@ -116,6 +143,21 @@ struct file => {
   let print(s: string): void => {
     if this.is_valid =>
       syswrite(this.fd, s.contents, s.length);
+  },
+
+   /**
+  * println - Prints a string followed by a new line to the file
+  * @param s: the string to print
+  * @return: void
+  **/
+  let println(s: string): void => {
+   this.print(s + "\n");
+  },
+
+  let getstat(): stat => {
+    let s: stat;
+    sysstat(this.filename, s);
+    return s;
   }
 
 }

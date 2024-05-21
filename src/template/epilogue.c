@@ -46,6 +46,5 @@ string __UL_append_string(string dest, string to_append) {
     s->length++;
   }
   *dest = *s;
-  // destroy_arena(old_arena);
   return dest;
 }
