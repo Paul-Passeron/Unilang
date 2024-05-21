@@ -3,7 +3,7 @@
 
 let entry(): void => {
   let f: file;
-  f.open("test.txt", "r");
+  f.open("test.txt", "w");
   f.print("Hello, World !\n");
   f.close();
 }

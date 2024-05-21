@@ -64,6 +64,7 @@ let o_creat: i32 => 64;
 struct file => {
   fd: u64,
   mode: i8,
+  is_valid: bool,
 
   /**
   * open - Opens file
@@ -72,20 +73,29 @@ struct file => {
   * @return: void
   **/
   let open(path: string, omode: string): void => {
-    if omode == "r" => {
+    this.is_valid => 1;
+    if omode == "w" => {
       let mode: i32 => 0644;
       this.fd => syscreate(path, mode);
       if this.fd >= 0 => {
         let flags: i32 => o_wronly | o_creat;
         this.fd => sysopen(path, flags, mode);
-        if this.fd < 0 =>
+        if this.fd < 0 => {
+          this.is_valid => 0;
           println("Error opening file \'" + path + "\'");
+        }
       }
       else {
+        this.is_valid => 0;
         println("Error creating file \'" + path + "\'");
       }
-    }
-
+    } else if omode == "r" => {
+      this.is_valid => 0;
+      println("File reading is not implemented yet\n");
+    } else {
+      this.is_valid => 0;
+      println("Invalide file opening mode " + omode);
+    } 
   },
 
   /**
@@ -93,7 +103,8 @@ struct file => {
   * @return: void
   **/
   let close() : void => {
-    sysclose(this.fd);
+    if this.is_valid =>
+      sysclose(this.fd);
   },
 
 
@@ -103,8 +114,8 @@ struct file => {
   * @return: void
   **/
   let print(s: string): void => {
-    // print("YES");
-    syswrite(this.fd, s.contents, s.length);
+    if this.is_valid =>
+      syswrite(this.fd, s.contents, s.length);
   }
 
 }
