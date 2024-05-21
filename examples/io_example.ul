@@ -1,15 +1,11 @@
 @include "stdlib/string.ul"
 @include "stdlib/io.ul"
 
+
 let entry(): void => {
   let filename: string => "test.txt";
   let f: file;
-  f.open(filename, "w");
-  f.println("Hello, World !");
-  f.println("This is a second line");
+  f.open(filename, "r");
+  println(f.read());
   f.close();
-
-  println("Size of " + filename + " is " + f.size());
-  print_num(-45);
-  println("");
 }

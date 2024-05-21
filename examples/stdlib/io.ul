@@ -7,6 +7,7 @@
 
 @include "syscalls.ul"
 @include "string.ul"
+@include "stat.ul"
 
 /**
  * putchar - Prints a char on the standard output
@@ -54,32 +55,10 @@ let println(s: string): void => {
 }
 
 
+let o_rdonly: i32 => 0;
 let o_wronly: i32 => 1;
 let o_creat: i32 => 64;
 
-
-struct stat => {
-  stat_dev: u64,
-  stat_ino: u64,
-  stat_nlink: u64,
-  stat_mode: u32,
-  stat_uid: u32,
-  stat_gid: u32,
-  pad0: i32,
-  stat_rdev: u64,
-  stat_size: i64,
-  stat_blksize: i64,
-  stat_blocks: i64,
-  stat_atime: i64,
-  stat_atime_nsec: i64,
-  stat_mtime: i64,
-  stat_mtime_nsec: i64,
-  stat_ctime: i64,
-  stat_ctime_nsec: i64,
-  glibc_reserved0: i64,
-  glibc_reserved2: i64,
-  glibc_reserved3: i64,
-} 
 
 
 /**
@@ -88,6 +67,7 @@ struct stat => {
 struct file => {
   fd: u64,
   mode: i8,
+  omode: string,
   filename: string,
   is_valid: bool,
   stats: stat,
@@ -103,8 +83,9 @@ struct file => {
   let open(path: string, omode: string): void => {
     this.is_valid => 1;
     this.filename => path;
+    this.omode => omode;
+    let mode: i32 => 0666;
     if omode == "w" => {
-      let mode: i32 => 0644;
       this.fd => syscreate(path, mode);
       if this.fd >= 0 => {
         let flags: i32 => o_wronly | o_creat;
@@ -119,8 +100,12 @@ struct file => {
         println("Error creating file \'" + path + "\'");
       }
     } else if omode == "r" => {
-      this.is_valid => 0;
-      println("File reading is not implemented yet\n");
+       let flags: i32 => o_rdonly;
+        this.fd => sysopen(path, flags, mode);
+        if this.fd < 0 => {
+          this.is_valid => 0;
+          println("Error opening file \'" + path + "\'");
+        }
     } else {
       this.is_valid => 0;
       println("Invalide file opening mode " + omode);
@@ -167,7 +152,22 @@ struct file => {
     if !this.is_valid => return -1;
     this.stats => this.getstat();
     return this.stats.stat_size;
-  }
+  },
+
+  let read(): string => {
+    if !this.is_valid => {
+      println("Could not read: Invalid file");
+      return "";
+    }
+    if this.omode != "r" => {
+      println("Could not read: Invalid mode: " + this.omode);
+      return "";
+    }
+    let size: i32 => this.size();
+    let s: string => sysread(this.fd, size);
+    s.length => size;
+    return s;
+  },
 
 }
 

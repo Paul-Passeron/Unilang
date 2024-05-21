@@ -8,6 +8,7 @@
 #include "../include/ul_compiler_globals.h"
 #include "../include/ul_flow.h"
 #include "../include/ul_io.h"
+#include <fcntl.h>
 
 generator_t generator;
 

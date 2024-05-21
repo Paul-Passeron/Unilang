@@ -1,0 +1,33 @@
+/**
+ * stat.ul
+ * Copyright (C) Paul Passeron
+ * Unilang Standard Library Stat structure
+ * Paul Passeron <paul.passeron2@gmail.com>
+**/
+
+
+/**
+ * Stat structure used in file io and by syscalls
+**/
+struct stat => {
+  stat_dev: u64,
+  stat_ino: u64,
+  stat_nlink: u64,
+  stat_mode: u32,
+  stat_uid: u32,
+  stat_gid: u32,
+  pad0: i32,
+  stat_rdev: u64,
+  stat_size: i64,
+  stat_blksize: i64,
+  stat_blocks: i64,
+  stat_atime: i64,
+  stat_atime_nsec: i64,
+  stat_mtime: i64,
+  stat_mtime_nsec: i64,
+  stat_ctime: i64,
+  stat_ctime_nsec: i64,
+  glibc_reserved0: i64,
+  glibc_reserved2: i64,
+  glibc_reserved3: i64,
+} 
