@@ -82,12 +82,6 @@ const type_t VOID_TYPE = {.name = "void",
                           .kind = TY_PRIMITIVE,
                           .is_signed = false};
 
-// const type_t STRING_TYPE = {.name = "string",
-//                             .is_builtin = true,
-//                             .size = 24,
-//                             .kind = TY_PRIMITIVE,
-//                             .is_signed = false};
-
 const type_t CSTR_TYPE = {.name = "cstr",
                           .is_builtin = true,
                           .size = 8,
@@ -169,10 +163,8 @@ type_t get_type_of_member(char *type, char *member) {
     for (size_t i = 0; i < ul_dyn_length(t.members_names); i++) {
       char *n = dyn_str_get(t.members_names, i);
       if (streq(n, member)) {
-        printf("MEMBER %s.%s found\n", type, member);
         return get_type_by_name(dyn_str_get(t.members_types, i), NULL);
       }
-      printf("WAS NOT MEMBER %s.%s\n", type, member);
     }
   }
   printf("%s.%s\n", type, member);
@@ -240,7 +232,6 @@ void generate_program(ast_t prog) {
 }
 
 void generate_type(ast_t type) {
-  // IF()
   bool found = false;
   char *name = type->as.iden->content;
   type_t t = get_type_by_name(name, &found);
@@ -260,7 +251,6 @@ void generate_fundef_param(ast_t fundef_param) {
   ul_logger_info("Generating Fundef param");
 
   ast_fundef_param_t f = *fundef_param->as.fundef_param;
-  // printf("TYPE IS %p\n", f.type);
   generate_type(f.type);
   gprintf(" %s", f.name);
   var_array_t *vs = &generator.context.vars;
@@ -274,14 +264,11 @@ void generate_fundef_param(ast_t fundef_param) {
   ul_dyn_append(vs, var);
 }
 
-void generate_fundef(ast_t fundef) {
+void generate_fundef(ast_t fundef, bool prefix) {
   ul_logger_info("Generating Fundef");
-
   ast_fundef_t f = *fundef->as.fundef;
-
   generate_type(f.return_type);
-
-  gprintf(" %s%s(", FUN_PREFIX, f.name);
+  gprintf(" %s%s(", prefix ? FUN_PREFIX : "", f.name);
   for (size_t i = 0; i < ul_dyn_length(f.params); ++i) {
     if (i > 0) {
       gprintf(", ");
@@ -315,11 +302,8 @@ void generate_funcall(ast_t funcall) {
 
 void generate_vardef(ast_t vardef) {
   ul_logger_info("Generating Vardef");
-  // type_array_t ts = generator.context.types;
   ast_vardef_t v = *vardef->as.vardef;
-
   if (v.value != NULL) {
-
     generate_type(v.type);
     gprintf(" %s", v.name);
     gprintf("=");
@@ -328,7 +312,6 @@ void generate_vardef(ast_t vardef) {
     var_array_t *vs = &generator.context.vars;
     var_t var;
     strcpy(var.name, v.name);
-    // var.type = f.type->as.iden->content;
     strcpy(var.type, v.type->as.iden->content);
     ul_dyn_append(vs, var);
   } else {
@@ -503,21 +486,9 @@ type_t get_type_of_expr(ast_t expr) {
     ast_access_t a = *expr->as.access;
     type_t t = get_type_of_expr(a.object);
     if (a.field->kind == A_FUNCALL) {
-      // if (streq(t.name, "string")) {
-      //   if (streq(a.field->as.funcall->name, "append")) {
-      //     return get_type_by_name("string", NULL);
-      //   } else
-      //     ul_assert_location(expr->loc, false,
-      //                        "Cannot get type of expression yet !\n");
-      // }
       return get_method_ret_type(t.name, a.field->as.funcall->name);
     } else {
-      // if (!streq(t.name, "string"))
       return get_type_of_member(t.name, a.field->as.iden->content);
-      // if (streq(a.field->as.iden->content, "contents")) {
-      //   return get_type_by_name("cstr", NULL);
-      // } else
-      //   return get_type_by_name("u32", NULL);
     }
     break;
   }
@@ -757,7 +728,7 @@ void generate_statement(ast_t stmt) {
   bool found = true;
   switch (stmt->kind) {
   case A_FUNDEF: {
-    generate_fundef(stmt);
+    generate_fundef(stmt, true);
     while (ul_dyn_length(generator.context.vars) > l) {
       ul_dyn_destroy_last(&generator.context.vars);
     }
@@ -823,6 +794,25 @@ void generate_statement(ast_t stmt) {
   }
   // printf("%ld %ld\n", ul_dyn_length(generator.context.vars), l);
 }
+
+void generate_fundef_prototype(ast_t stmt, bool prefix) {
+  if (stmt->kind == A_FUNDEF) {
+    ast_fundef_t f = *stmt->as.fundef;
+    if (streq(f.name, "entry"))
+      return;
+    generate_type(f.return_type);
+    gprintf(" %s%s(", prefix ? FUN_PREFIX : "", f.name);
+    for (size_t k = 0; k < ul_dyn_length(f.params); ++k) {
+      if (k > 0) {
+        gprintf(", ");
+      }
+      ast_t param = dyn_ast_get(f.params, k);
+      generate_fundef_param(param);
+    }
+    gprintf(");");
+  }
+}
+
 void generate_forward(ast_t prog) {
   ul_logger_info("Generating Forward definitions");
   ast_array_t contents = prog->as.prog->prog;
@@ -835,44 +825,14 @@ void generate_forward(ast_t prog) {
               t.type.name);
       for (size_t m = 0; m < ul_dyn_length(t.type.methods); m++) {
         ast_t fdef = dyn_ast_get(t.type.methods, m);
-        ast_fundef_t f = *fdef->as.fundef;
-        generate_type(f.return_type);
-        gprintf(" %s(", f.name);
-        size_t j;
-        for (j = 0; j < ul_dyn_length(f.params); ++j) {
-          if (j > 0) {
-            gprintf(", ");
-          }
-          ast_t param = dyn_ast_get(f.params, j);
-          generate_fundef_param(param);
-        }
-        if (j > 0) {
-          gprintf(", ");
-        }
-        gprintf("%s this", t.type.name);
-        gprintf(");");
+        generate_fundef_prototype(fdef, false);
       }
     }
   }
 
   for (size_t i = 0; i < ul_dyn_length(contents); i++) {
-
     ast_t stmt = dyn_ast_get(contents, i);
-    if (stmt->kind == A_FUNDEF) {
-      ast_fundef_t f = *stmt->as.fundef;
-      if (streq(f.name, "entry"))
-        continue;
-      generate_type(f.return_type);
-      gprintf(" %s%s(", FUN_PREFIX, f.name);
-      for (size_t k = 0; k < ul_dyn_length(f.params); ++k) {
-        if (k > 0) {
-          gprintf(", ");
-        }
-        ast_t param = dyn_ast_get(f.params, k);
-        generate_fundef_param(param);
-      }
-      gprintf(");");
-    }
+    generate_fundef_prototype(stmt, true);
   }
 }
 
@@ -888,34 +848,7 @@ void generate_methods(ast_t prog) {
       for (size_t m = 0; m < ul_dyn_length(t.type.methods); m++) {
         size_t l = ul_dyn_length(generator.context.vars);
         ast_t fdef = dyn_ast_get(t.type.methods, m);
-        ast_fundef_t f = *fdef->as.fundef;
-        generate_type(f.return_type);
-        gprintf(" %s(", f.name);
-        size_t j;
-        for (j = 0; j < ul_dyn_length(f.params); ++j) {
-          if (j > 0) {
-            gprintf(", ");
-          }
-          ast_t param = dyn_ast_get(f.params, j);
-          generate_fundef_param(param);
-        }
-        if (j > 0) {
-          gprintf(", ");
-        }
-        gprintf("%s this", t.type.name);
-        var_array_t *vs = &generator.context.vars;
-        var_t var;
-        strcpy(var.name, "this");
-        strcpy(var.type, t.type.name);
-        ul_dyn_append(vs, var);
-
-        gprintf("){\n");
-        for (size_t i = 0; i < ul_dyn_length(f.body); ++i) {
-          ast_t stmt = dyn_ast_get(f.body, i);
-          generate_statement(stmt);
-          gprintf("\n");
-        }
-        gprintf("}\n");
+        generate_fundef(fdef, false);
         while (ul_dyn_length(generator.context.vars) > l) {
           ul_dyn_destroy_last(&generator.context.vars);
         }

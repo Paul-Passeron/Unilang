@@ -349,7 +349,6 @@ ast_t parse_tdef_struct(parser_t *p) {
   ast_array_t methods = new_ast_dyn();
   while (peek_kind(*p) != T_CLOSEBRACE) {
     if (is_fundef(*p)) {
-      // ul_assert(false, "Method definition is not implemetned yet !");
       ast_t fdef = parse_fundef(p);
       unsigned int old_arena = get_arena();
       char prefix[256] = "__internal_";
@@ -364,6 +363,9 @@ ast_t parse_tdef_struct(parser_t *p) {
       strcat(mangled_name, fdef->as.fundef->name);
       set_arena(old_arena);
       fdef->as.fundef->name = mangled_name;
+      ast_t this_param =
+          new_fundef_param(loc, new_iden(loc, type_name), "this");
+      ul_dyn_append(&fdef->as.fundef->params, this_param);
       ul_dyn_append(&methods, fdef);
     } else {
       expect(*p, T_WORD);
