@@ -162,11 +162,31 @@ bool is_int_type(char *name) {
   return false;
 }
 
+type_t get_type_of_member(char *type, char *member) {
+  type_t t = get_type_by_name(type, NULL);
+  if (!is_int_type(type)) {
+
+    for (size_t i = 0; i < ul_dyn_length(t.members_names); i++) {
+      char *n = dyn_str_get(t.members_names, i);
+      if (streq(n, member)) {
+        printf("MEMBER %s.%s found\n", type, member);
+        return get_type_by_name(dyn_str_get(t.members_types, i), NULL);
+      }
+      printf("WAS NOT MEMBER %s.%s\n", type, member);
+    }
+  }
+  printf("%s.%s\n", type, member);
+  ul_assert(false, "COULD NOT FIND TYPE OF MEMBER");
+  return (type_t){0};
+}
+
 type_t get_type_of_var(const char *name, bool *found_name, bool *found_type) {
-  for (size_t i = 0; i < ul_dyn_length(generator.context.vars); i++) {
+  for (int i = ul_dyn_length(generator.context.vars) - 1; i >= 0; i--) {
     var_t v = dyn_var_get(generator.context.vars, i);
     if (streq(v.name, name)) {
       *found_name = true;
+      if (streq(name, "this"))
+        printf("FOUND THIS AND IS: %s: %s\n", v.name, v.type);
       return get_type_by_name(v.type, found_type);
     }
   }
@@ -461,6 +481,7 @@ type_t get_type_of_expr(ast_t expr) {
     return get_type_of_var(expr->as.iden->content, &found_name, &found_type);
   }
   case A_ACCESS: {
+    // TODO: Big refactor lol
     ast_access_t a = *expr->as.access;
     type_t t = get_type_of_expr(a.object);
     if (a.field->kind == A_FUNCALL) {
@@ -470,19 +491,10 @@ type_t get_type_of_expr(ast_t expr) {
         } else
           ul_assert_location(expr->loc, false,
                              "Cannot get type of expression yet !\n");
-      } else {
-        for (size_t i = 0; i < ul_dyn_length(t.members_names); i++) {
-
-          char *name = dyn_str_get(t.members_names, i);
-          // TODO: add support for methods
-          if (streq(name, a.field->as.iden->content)) {
-            return get_type_by_name(dyn_str_get(t.members_types, i), NULL);
-          }
-        }
-        ul_assert_location(expr->loc, false, "No field matches");
       }
-
     } else {
+      if (!streq(t.name, "string"))
+        return get_type_of_member(t.name, a.field->as.iden->content);
       if (streq(a.field->as.iden->content, "contents")) {
         return get_type_by_name("cstr", NULL);
       } else
@@ -515,7 +527,9 @@ void generate_access(ast_t access) {
   ast_access_t a = *access->as.access;
   // Should do some checks here
   type_t t = get_type_of_expr(a.object);
-
+  if (is_int_type(t.name)) {
+    ul_assert_location(access->loc, false, "INT TYPE IN ACCESS");
+  }
   if (a.field->kind == A_IDEN) {
     generate_expression(a.object);
     gprintf("->%s", a.field->as.iden->content);
@@ -734,6 +748,10 @@ void generate_statement(ast_t stmt) {
   } break;
   case A_IF: {
     generate_if(stmt);
+    while (ul_dyn_length(generator.context.vars) > l) {
+      ul_dyn_destroy_last(&generator.context.vars);
+    }
+
   } break;
   case A_COMPOUND: {
     generate_compound(stmt);
@@ -743,6 +761,10 @@ void generate_statement(ast_t stmt) {
   } break;
   case A_RETURN: {
     generate_return(stmt);
+    while (ul_dyn_length(generator.context.vars) > l) {
+      ul_dyn_destroy_last(&generator.context.vars);
+    }
+
   } break;
   case A_LOOP: {
     generate_loop(stmt);
@@ -752,13 +774,25 @@ void generate_statement(ast_t stmt) {
   } break;
   case A_TDEF: {
     generate_tdef(stmt);
+    while (ul_dyn_length(generator.context.vars) > l) {
+      ul_dyn_destroy_last(&generator.context.vars);
+    }
+
   } break;
   case A_ASSIGN: {
     generate_assign(stmt);
+    while (ul_dyn_length(generator.context.vars) > l) {
+      ul_dyn_destroy_last(&generator.context.vars);
+    }
+
     // ul_assert(false, "");
   } break;
   case A_WHILE: {
     generate_while(stmt);
+    while (ul_dyn_length(generator.context.vars) > l) {
+      ul_dyn_destroy_last(&generator.context.vars);
+    }
+
   } break;
   default:
     found = false;
@@ -824,6 +858,7 @@ void generate_forward(ast_t prog) {
 }
 
 void generate_methods(ast_t prog) {
+  size_t tmp = ul_dyn_length(generator.context.vars);
 
   ul_logger_info("Generating methods definitions");
   ast_array_t contents = prog->as.prog->prog;
@@ -867,6 +902,9 @@ void generate_methods(ast_t prog) {
         }
       }
     }
+  }
+  while (ul_dyn_length(generator.context.vars) > tmp) {
+    ul_dyn_destroy_last(&generator.context.vars);
   }
 }
 

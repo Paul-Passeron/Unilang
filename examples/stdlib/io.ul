@@ -78,6 +78,12 @@ struct file => {
     sysclose(this.fd);
   },
 
+
+  /**
+  * print - Prints a string to the file
+  * @param s: the string to print
+  * @return: void
+  **/
   let print(s: string): void => {
     // print("YES");
     syswrite(this.fd, s.contents, s.length);
@@ -87,12 +93,5 @@ struct file => {
 
 
 
-
-/**
- * fprint - Prints a string to a file
- * @param file: the handle of the file
- * @param s: the string to print
- * @return: void
-**/
 
 

@@ -1,21 +1,25 @@
 @include "stdlib/string.ul"
 @include "stdlib/io.ul"
 
-struct test => {
-  s: string,
-  let test(): void => {
-    println("Called the constructor !");
-    this.s => "abcd";
-  },
+struct ill => {
+  value: i32,
+  next: ill,
   let print(): void => {
-    println("Printing from test !");
-    println(this.s);
+    if this => {
+      print_num(this.value);
+      print(", ");
+      this.next.print();
+    } 
   }
 }
 
+
 let entry(): void => {
-  let t: test;
-  // t.s => "";
-  t.s.append("aadfqrgrgaa");
-  t.print();
+ let a: ill;
+ let b: ill;
+ b.value => 5;
+ a.value => 6;
+ a.next => b;
+ a.print();
+ println("");
 } 

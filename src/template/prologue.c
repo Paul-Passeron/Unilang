@@ -301,7 +301,7 @@ void __UL_entry();
 
 void __UL_exit(u8 exit_code) {
   clear_allocator();
-  ul_destroy_logger();
+  // ul_destroy_logger();
 }
 
 #define __UL_syscall1(num, arg) syscall(num, arg)
@@ -313,10 +313,10 @@ void __UL_exit(u8 exit_code) {
   syscall(num, arg1, arg2, arg3, arg4, arg5)
 
 int main(void) {
-  create_logger(&ul_global_logger);
-  set_logger_severity(&ul_global_logger, SEV_WARN);
-  set_logger_output(&ul_global_logger, stderr);
-  unsigned int default_arena = new_arena(32);
+  // create_logger(&ul_global_logger);
+  // set_logger_severity(&ul_global_logger, SEV_WARN);
+  // set_logger_output(&ul_global_logger, stderr);
+  unsigned int default_arena = new_arena(1);
   set_arena(default_arena);
   __UL_entry();
   __UL_exit(0);
