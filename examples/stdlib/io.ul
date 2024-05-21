@@ -34,7 +34,7 @@ let print(s: string): void => {
 let print_num(n: i32): void => {
   if (n < 0) => {
     putchar('-');
-    n => 0-n;
+    n => -n;
   }
   let a: i32 => n / 10;
   if (a != 0) =>  {
@@ -90,6 +90,9 @@ struct file => {
   mode: i8,
   filename: string,
   is_valid: bool,
+  stats: stat,
+
+
 
   /**
   * open - Opens file
@@ -158,6 +161,12 @@ struct file => {
     let s: stat;
     sysstat(this.filename, s);
     return s;
+  },
+
+  let size(): i32 => {
+    if !this.is_valid => return -1;
+    this.stats => this.getstat();
+    return this.stats.stat_size;
   }
 
 }

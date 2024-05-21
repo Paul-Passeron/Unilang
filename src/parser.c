@@ -133,7 +133,11 @@ ast_t parse_leaf(parser_t *p) {
   ast_t res = NULL;
   token_t tok = peek_parser(*p);
   location_t loc = peek_loc(*p);
-  if (tok.kind == T_OPENPAREN) {
+  if (is_unary_operator(tok.kind)) {
+    consume_parser(p);
+    ast_t leaf = parse_leaf(p);
+    res = new_unary(loc, tok.kind, leaf, false);
+  } else if (tok.kind == T_OPENPAREN) {
     ul_logger_info_location(tok.location, "parsing leaf as paren expression");
     consume_parser(p);
     res = parse_expression(p);

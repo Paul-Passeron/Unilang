@@ -9,7 +9,7 @@ let entry(): void => {
   f.println("This is a second line");
   f.close();
 
-  println("Size of " + filename + " is " + f.getstat().stat_size);
-  print_num(0-45);
+  println("Size of " + filename + " is " + f.size());
+  print_num(-45);
   println("");
 }

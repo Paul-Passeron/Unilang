@@ -2,6 +2,7 @@
 #define TOKEN_H
 
 #include "location.h"
+#include <stdbool.h>
 #include <stdio.h>
 
 typedef enum token_kind_t {
@@ -51,5 +52,7 @@ const char *token_kind_to_str(token_kind_t t);
 void print_token(token_t tok);
 
 int get_precedence(token_kind_t t);
+
+bool is_unary_operator(token_kind_t);
 
 #endif // TOKEN_H

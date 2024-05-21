@@ -15,7 +15,7 @@ typedef short i16;
 typedef unsigned int u32;
 typedef int i32;
 typedef unsigned long u64;
-typedef unsigned long i64;
+typedef long i64;
 typedef char *cstr;
 
 void __UL_exit(u8 exit_code);

@@ -104,3 +104,14 @@ int get_precedence(token_kind_t t) {
     return -1;
   }
 }
+
+bool is_unary_operator(token_kind_t t) {
+  switch (t) {
+  case T_MINUS:
+  case T_PLUS:
+  case T_NOT:
+    return true;
+  default:
+    return false;
+  }
+}

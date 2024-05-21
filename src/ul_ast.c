@@ -64,12 +64,18 @@ ast_t new_binop(location_t loc, token_kind_t op, ast_t left, ast_t right) {
 
 ast_t new_unary(location_t loc, token_kind_t op, ast_t operand,
                 bool is_postfix) {
-  (void)op;
-  (void)operand;
-  (void)is_postfix;
-  (void)loc;
-  ul_assert(false, "new_unary not implemented yet !");
-  return NULL; //
+  unsigned int old_arena = get_arena();
+  set_arena(parser_arena);
+  ast_t res = alloc(sizeof(struct ast_struct_t), 1);
+  ast_unary_t *u = alloc(sizeof(ast_unary_t), 1);
+  set_arena(old_arena);
+  u->is_postfix = is_postfix;
+  u->op = op;
+  u->operand = operand;
+  res->kind = A_UNARY;
+  res->as.unary = u;
+  res->loc = loc;
+  return res;
 }
 
 ast_t new_iden(location_t loc, char *content) {

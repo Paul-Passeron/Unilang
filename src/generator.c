@@ -389,8 +389,11 @@ void generate_operator(token_kind_t op) {
   case T_LOG_AND:
     gprintf("&");
     break;
-  default:
+  case T_NOT:
+    gprintf("!");
     break;
+  default:
+    ul_assert(false, "THIS KIND OF OPERATOR IS NOT IMPLEMENTED !");
   }
 }
 
@@ -575,6 +578,22 @@ void generate_index(ast_t index) {
   }
 }
 
+void generate_unary(ast_t unary) {
+  ul_logger_info("Generating Unary operation");
+  ast_unary_t u = *unary->as.unary;
+  if (u.is_postfix) {
+    gprintf("(");
+    generate_expression(u.operand);
+    gprintf(")");
+    generate_operator(u.op);
+  } else {
+    generate_operator(u.op);
+    gprintf("(");
+    generate_expression(u.operand);
+    gprintf(")");
+  }
+}
+
 void generate_expression(ast_t stmt) {
   ul_logger_info("Generating Expression");
   switch (stmt->kind) {
@@ -609,6 +628,10 @@ void generate_expression(ast_t stmt) {
   case A_INDEX: {
     // ul_assert(false, "yes");
     generate_index(stmt);
+    return;
+  }
+  case A_UNARY: {
+    generate_unary(stmt);
     return;
   }
   default:
