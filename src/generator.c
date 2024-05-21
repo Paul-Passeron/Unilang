@@ -82,11 +82,11 @@ const type_t VOID_TYPE = {.name = "void",
                           .kind = TY_PRIMITIVE,
                           .is_signed = false};
 
-const type_t STRING_TYPE = {.name = "string",
-                            .is_builtin = true,
-                            .size = 24,
-                            .kind = TY_PRIMITIVE,
-                            .is_signed = false};
+// const type_t STRING_TYPE = {.name = "string",
+//                             .is_builtin = true,
+//                             .size = 24,
+//                             .kind = TY_PRIMITIVE,
+//                             .is_signed = false};
 
 const type_t CSTR_TYPE = {.name = "cstr",
                           .is_builtin = true,
@@ -113,7 +113,7 @@ void set_generator_target(const char *target) {
   ul_dyn_append(&generator.context.types, U64_TYPE);
   ul_dyn_append(&generator.context.types, I64_TYPE);
   ul_dyn_append(&generator.context.types, VOID_TYPE);
-  ul_dyn_append(&generator.context.types, STRING_TYPE);
+  // ul_dyn_append(&generator.context.types, STRING_TYPE);
   ul_dyn_append(&generator.context.types, CSTR_TYPE);
   generator.target = f;
   generator.failed = false;
@@ -180,17 +180,33 @@ type_t get_type_of_member(char *type, char *member) {
   return (type_t){0};
 }
 
+type_t get_method_ret_type(char *name, char *method) {
+  type_t t = get_type_by_name(name, NULL);
+  char actual_name[128] = {0};
+  strcat(actual_name, "__internal_");
+  strcat(actual_name, name);
+  strcat(actual_name, "_");
+  strcat(actual_name, method);
+  for (size_t i = 0; i < ul_dyn_length(t.methods); i++) {
+    ast_t a = dyn_ast_get(t.methods, i);
+    ast_fundef_t f = *(a->as.fundef);
+
+    if (streq(actual_name, f.name)) {
+      return get_type_by_name(f.return_type->as.iden->content, NULL);
+    }
+  }
+  ul_assert(false, "COULD NOT FIND RETURN TYPE OF METHOD");
+  return (type_t){0};
+}
+
 type_t get_type_of_var(const char *name, bool *found_name, bool *found_type) {
   for (int i = ul_dyn_length(generator.context.vars) - 1; i >= 0; i--) {
     var_t v = dyn_var_get(generator.context.vars, i);
     if (streq(v.name, name)) {
       *found_name = true;
-      if (streq(name, "this"))
-        printf("FOUND THIS AND IS: %s: %s\n", v.name, v.type);
       return get_type_by_name(v.type, found_type);
     }
   }
-  printf("%s\n", name);
   ul_assert(false, "COULD NOT FIND TYPE BY VAR");
   return (type_t){0};
 }
@@ -207,6 +223,7 @@ bool has_failed(void) { return generator.failed; }
 
 void generate_forward(ast_t prog);
 void generate_methods(ast_t prog);
+void generate_epilogue();
 
 bool type_has_constructor(char *name);
 void generate_program(ast_t prog) {
@@ -219,6 +236,7 @@ void generate_program(ast_t prog) {
     generate_statement(stmt);
   }
   generate_methods(prog);
+  generate_epilogue();
 }
 
 void generate_type(ast_t type) {
@@ -472,7 +490,7 @@ type_t get_type_of_expr(ast_t expr) {
   case A_CHARLIT:
     return CHAR_TYPE;
   case A_STRLIT:
-    return STRING_TYPE;
+    return get_type_by_name("string", NULL);
   case A_NUMLIT:
     return I64_TYPE;
   case A_IDEN: {
@@ -485,20 +503,21 @@ type_t get_type_of_expr(ast_t expr) {
     ast_access_t a = *expr->as.access;
     type_t t = get_type_of_expr(a.object);
     if (a.field->kind == A_FUNCALL) {
-      if (streq(t.name, "string")) {
-        if (streq(a.field->as.funcall->name, "append")) {
-          return get_type_by_name("string", NULL);
-        } else
-          ul_assert_location(expr->loc, false,
-                             "Cannot get type of expression yet !\n");
-      }
+      // if (streq(t.name, "string")) {
+      //   if (streq(a.field->as.funcall->name, "append")) {
+      //     return get_type_by_name("string", NULL);
+      //   } else
+      //     ul_assert_location(expr->loc, false,
+      //                        "Cannot get type of expression yet !\n");
+      // }
+      return get_method_ret_type(t.name, a.field->as.funcall->name);
     } else {
-      if (!streq(t.name, "string"))
-        return get_type_of_member(t.name, a.field->as.iden->content);
-      if (streq(a.field->as.iden->content, "contents")) {
-        return get_type_by_name("cstr", NULL);
-      } else
-        return get_type_by_name("u32", NULL);
+      // if (!streq(t.name, "string"))
+      return get_type_of_member(t.name, a.field->as.iden->content);
+      // if (streq(a.field->as.iden->content, "contents")) {
+      //   return get_type_by_name("cstr", NULL);
+      // } else
+      //   return get_type_by_name("u32", NULL);
     }
     break;
   }
@@ -918,6 +937,20 @@ void generate_prolog() {
   unsigned int old_arena = get_arena();
   set_arena(new_arena(length + 1));
   read_file("src/template/prologue.c", &buff, &length);
+  set_arena(old_arena);
+  gprintf("%s", buff);
+}
+
+void generate_epilogue() {
+  ul_logger_info("Generating Epilogue");
+  char *buff;
+  FILE *f = fopen("src/template/epilogue.c", "r");
+  fseek(f, 0, SEEK_END);
+  size_t length = ftell(f);
+  fclose(f);
+  unsigned int old_arena = get_arena();
+  set_arena(new_arena(length + 1));
+  read_file("src/template/epilogue.c", &buff, &length);
   set_arena(old_arena);
   gprintf("%s", buff);
 }

@@ -6,6 +6,7 @@
 **/
 
 @include "syscalls.ul"
+@include "string.ul"
 
 /**
  * putchar - Prints a char on the standard output
@@ -52,6 +53,11 @@ let println(s: string): void => {
   putchar(10);
 }
 
+
+let o_wronly: i32 => 1;
+let o_creat: i32 => 64;
+
+
 /**
  * File struct, used as a handle when dealing with files
 **/
@@ -65,9 +71,21 @@ struct file => {
   * @param flag: the flags to open the file, this defines the behavior of the returned handle
   * @return: void
   **/
-  let open(path: string, flags: u32): void => {
-    this.fd => sysopen(path, flags, 1877);
-    this.mode => flags;
+  let open(path: string, omode: string): void => {
+    if omode == "r" => {
+      let mode: i32 => 0644;
+      this.fd => syscreate(path, mode);
+      if this.fd >= 0 => {
+        let flags: i32 => o_wronly | o_creat;
+        this.fd => sysopen(path, flags, mode);
+        if this.fd < 0 =>
+          println("Error opening file \'" + path + "\'");
+      }
+      else {
+        println("Error creating file \'" + path + "\'");
+      }
+    }
+
   },
 
   /**

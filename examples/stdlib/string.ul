@@ -5,6 +5,28 @@
  * Paul Passeron <paul.passeron2@gmail.com>
 **/
 
+struct string => {
+  contents: cstr,
+  length: u32,
+  arena: u32,
+
+  let string(): void => {
+    println("Called String default constructor");
+    let template: string => "";
+    this.contents => template.contents;
+    this.arena => template.arena;
+    this.length => template.length;
+  },
+
+  let append(s: string): string => {
+    append_string(this, s);
+    return this;
+  },
+
+  let print(): void => {
+    print(this);
+  }
+}
 
 /**
  * streq - Checks if two strings are equals

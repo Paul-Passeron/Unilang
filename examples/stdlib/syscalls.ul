@@ -5,6 +5,8 @@
  * Paul Passeron <paul.passeron2@gmail.com>
 **/
 
+@include "string.ul"
+
 /**
  * write - write syscall, writes 'count' bytes from
  *         'buf' to 'fd' file descriptor
@@ -37,4 +39,8 @@ let sysopen(filename: string, flags: u32, mode: u32): u32 => {
 
 let sysclose(fd: u32): void => {
   syscall1(3, fd);
+}
+
+let syscreate(filename: string, mode: u32): u32 => {
+  return syscall2(85, filename.contents, mode);
 }

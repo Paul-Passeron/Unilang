@@ -1,25 +1,9 @@
 @include "stdlib/string.ul"
 @include "stdlib/io.ul"
 
-struct ill => {
-  value: i32,
-  next: ill,
-  let print(): void => {
-    if this => {
-      print_num(this.value);
-      print(", ");
-      this.next.print();
-    } 
-  }
-}
-
-
 let entry(): void => {
- let a: ill;
- let b: ill;
- b.value => 5;
- a.value => 6;
- a.next => b;
- a.print();
- println("");
-} 
+  let f: file;
+  f.open("test.txt", "r");
+  f.print("Hello, World !\n");
+  f.close();
+}
