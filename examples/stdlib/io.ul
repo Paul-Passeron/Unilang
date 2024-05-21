@@ -107,7 +107,7 @@ struct file => {
           println("Error opening file \'" + path + "\'");
         }
     } else {
-      this.is_valid => 0;
+      this.is_valid => 0;  
       println("Invalide file opening mode " + omode);
     } 
   },

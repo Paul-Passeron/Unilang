@@ -290,6 +290,35 @@ ast_t new_while(location_t loc, ast_t cond, ast_t stmt) {
   return res;
 }
 
+ast_t new_type(location_t loc, char *name, int list_n) {
+  unsigned int old_arena = get_arena();
+  set_arena(parser_arena);
+  ast_t res = alloc(sizeof(struct ast_struct_t), 1);
+  ast_type_t *t = alloc(sizeof(ast_type_t), 1);
+  set_arena(old_arena);
+  t->name = name;
+  t->list_n = list_n;
+  res->kind = A_TYPE;
+  res->as.type = t;
+  res->loc = loc;
+  return res;
+}
+
+ast_t new_iter(location_t loc, ast_t var, ast_t itered, ast_t stmt) {
+  unsigned int old_arena = get_arena();
+  set_arena(parser_arena);
+  ast_t res = alloc(sizeof(struct ast_struct_t), 1);
+  ast_iter_t *iter = alloc(sizeof(ast_iter_t), 1);
+  set_arena(old_arena);
+  iter->var = var;
+  iter->itered = itered;
+  iter->stmt = stmt;
+  res->kind = A_ITER;
+  res->as.iter = iter;
+  res->loc = loc;
+  return res;
+}
+
 const char *ast_kind_to_str(ast_kind_t kind) {
   switch (kind) {
   case A_STRLIT:

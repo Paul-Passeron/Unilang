@@ -1,5 +1,12 @@
 @include "stdlib/io.ul"
 
+
 let entry(): void => {
-  println("Hello, World !".append(" lolilol"));
+  // let l: string[];
+  // l.append("hello");
+  // l.append("world");
+  // iter s: l => {
+  //   println(s);
+  // }
+  println("Hello, World !");
 }

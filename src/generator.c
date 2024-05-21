@@ -21,73 +21,85 @@ const type_t U8_TYPE = {.name = "u8",
                         .is_builtin = true,
                         .size = 1,
                         .kind = TY_PRIMITIVE,
-                        .is_signed = false};
+                        .is_signed = false,
+                        .list_n = 0};
 
 const type_t BOOL_TYPE = {.name = "bool",
                           .is_builtin = true,
                           .size = 1,
                           .kind = TY_PRIMITIVE,
-                          .is_signed = false};
+                          .is_signed = false,
+                          .list_n = 0};
 
 const type_t I8_TYPE = {.name = "i8",
                         .is_builtin = true,
                         .size = 1,
                         .kind = TY_PRIMITIVE,
-                        .is_signed = true};
+                        .is_signed = true,
+                        .list_n = 0};
 
 const type_t CHAR_TYPE = {.name = "char",
                           .is_builtin = true,
                           .size = 1,
                           .kind = TY_PRIMITIVE,
-                          .is_signed = true};
+                          .is_signed = true,
+                          .list_n = 0};
 
 const type_t U16_TYPE = {.name = "u16",
                          .is_builtin = true,
                          .size = 2,
                          .kind = TY_PRIMITIVE,
-                         .is_signed = false};
+                         .is_signed = false,
+                         .list_n = 0};
 
 const type_t I16_TYPE = {.name = "i16",
                          .is_builtin = true,
                          .size = 2,
                          .kind = TY_PRIMITIVE,
-                         .is_signed = true};
+                         .is_signed = true,
+                         .list_n = 0};
 
 const type_t U32_TYPE = {.name = "u32",
                          .is_builtin = true,
                          .size = 4,
                          .kind = TY_PRIMITIVE,
-                         .is_signed = false};
+                         .is_signed = false,
+                         .list_n = 0};
 
 const type_t I32_TYPE = {.name = "i32",
                          .is_builtin = true,
                          .size = 4,
                          .kind = TY_PRIMITIVE,
-                         .is_signed = true};
+                         .is_signed = true,
+                         .list_n = 0};
 
 const type_t U64_TYPE = {.name = "u64",
                          .is_builtin = true,
                          .size = 8,
                          .kind = TY_PRIMITIVE,
-                         .is_signed = false};
+                         .is_signed = false,
+                         .list_n = 0};
 
 const type_t I64_TYPE = {.name = "i64",
                          .is_builtin = true,
                          .size = 8,
                          .kind = TY_PRIMITIVE,
-                         .is_signed = true};
+                         .is_signed = true,
+                         .list_n = 0};
 
 const type_t VOID_TYPE = {.name = "void",
                           .is_builtin = true,
                           .size = 0,
                           .kind = TY_PRIMITIVE,
-                          .is_signed = false};
+                          .is_signed = false,
+                          .list_n = 0};
 
 const type_t CSTR_TYPE = {.name = "cstr",
                           .is_builtin = true,
                           .size = 8,
                           .kind = TY_PRIMITIVE,
-                          .is_signed = false};
+                          .is_signed = false,
+                          .list_n = 0};
 
 void set_generator_target(const char *target) {
   FILE *f = fopen(target, "w");
@@ -121,6 +133,7 @@ type_t get_type_by_name(const char *name, bool *found) {
     *found = false;
   for (size_t i = 0; i < ul_dyn_length(generator.context.types); i++) {
     type_t t = dyn_type_get(generator.context.types, i);
+    t.list_n = 0;
     if (streq(t.name, name)) {
       if (found != NULL)
         *found = true;
@@ -193,11 +206,18 @@ type_t get_method_ret_type(char *name, char *method) {
 }
 
 type_t get_type_of_var(const char *name, bool *found_name, bool *found_type) {
+  type_t res;
   for (int i = ul_dyn_length(generator.context.vars) - 1; i >= 0; i--) {
     var_t v = dyn_var_get(generator.context.vars, i);
     if (streq(v.name, name)) {
       *found_name = true;
-      return get_type_by_name(v.type, found_type);
+      res = get_type_by_name(v.type, found_type);
+      res.list_n = 0;
+      if (v.list_n > 0) {
+        res.list_n = v.list_n;
+        res.kind = TY_ARRAY;
+      }
+      return res;
     }
   }
   ul_assert(false, "COULD NOT FIND TYPE BY VAR");
@@ -234,7 +254,7 @@ void generate_program(ast_t prog) {
 
 void generate_type(ast_t type) {
   bool found = false;
-  char *name = type->as.iden->content;
+  char *name = type->as.type->name;
   type_t t = get_type_by_name(name, &found);
   (void)t;
   if (!found) {
@@ -243,7 +263,13 @@ void generate_type(ast_t type) {
     ul_logger_erro_location(type->loc, msg);
     generator.failed = true;
   }
-  if (type->kind == A_IDEN) {
+  if (type->kind != A_IDEN) {
+    if (type->as.type->list_n > 0) {
+      gprintf("__internal_array_t");
+    } else {
+      gprintf("%s", type->as.iden->content);
+    }
+  } else {
     gprintf("%s", type->as.iden->content);
   }
 }
@@ -257,10 +283,9 @@ void generate_fundef_param(ast_t fundef_param) {
   var_array_t *vs = &generator.context.vars;
   var_t var;
   strcpy(var.name, f.name);
-  if (f.type->kind == A_IDEN) {
-    strcpy(var.type, f.type->as.iden->content);
-  } else {
-    ul_assert(false, "WTF");
+  strcpy(var.type, f.type->as.iden->content);
+  if (f.type->kind != A_IDEN) {
+    var.list_n = f.type->as.type->list_n;
   }
   ul_dyn_append(vs, var);
 }
@@ -304,6 +329,16 @@ void generate_funcall(ast_t funcall) {
 void generate_vardef(ast_t vardef) {
   ul_logger_info("Generating Vardef");
   ast_vardef_t v = *vardef->as.vardef;
+  bool is_array = false;
+  if (v.type->kind == A_IDEN) {
+    is_array = false;
+  } else {
+    if (v.type->as.type->list_n > 0) {
+      is_array = true;
+    } else {
+      is_array = false;
+    }
+  }
   if (v.value != NULL) {
     generate_type(v.type);
     gprintf(" %s", v.name);
@@ -314,31 +349,52 @@ void generate_vardef(ast_t vardef) {
     var_t var;
     strcpy(var.name, v.name);
     strcpy(var.type, v.type->as.iden->content);
+    var.list_n = 0;
     ul_dyn_append(vs, var);
   } else {
-    bool found;
-    type_t t = get_type_by_name(v.type->as.iden->content, &found);
-    ul_assert_location(vardef->loc, found, "Type problem");
-    var_array_t *vs = &generator.context.vars;
-    var_t var;
-    strcpy(var.name, v.name);
-    // var.type = f.type->as.iden->content;
-    strcpy(var.type, v.type->as.iden->content);
-    ul_dyn_append(vs, var);
-    if (!t.is_builtin && t.kind == TY_STRUCT) {
+    if (is_array) {
+      var_array_t *vs = &generator.context.vars;
+      var_t var;
+      strcpy(var.name, v.name);
+      strcpy(var.type, v.type->as.iden->content);
+      var.list_n = v.type->as.type->list_n;
+      ul_dyn_append(vs, var);
       generate_type(v.type);
-      gprintf(" %s;", v.name);
-      gprintf("{");
-      gprintf("unsigned int old_arena=get_arena();");
-      gprintf("set_arena(new_arena(sizeof(struct __ul_internal_%s)));", t.name);
-      gprintf("%s", v.name);
-      gprintf("= alloc(sizeof(struct __ul_internal_%s), 1);", t.name);
-      gprintf("*%s=(struct __ul_internal_%s){0};", v.name, t.name);
-      gprintf("set_arena(old_arena);");
-      if (type_has_constructor(t.name)) {
-        gprintf("__internal_%s_%s(%s);", t.name, t.name, v.name);
+      gprintf(" %s = __internal_new_array(", v.name);
+      if (v.type->as.type->list_n > 1) {
+        gprintf("__internal_array_t");
+      } else {
+        gprintf("%s, %s", v.type->as.type->name,
+                is_int_type(v.type->as.type->name) ? "false" : "true");
       }
-      gprintf("}");
+      gprintf(");");
+    } else {
+      bool found;
+      type_t t = get_type_by_name(v.type->as.iden->content, &found);
+      ul_assert_location(vardef->loc, found, "Type problem");
+      var_array_t *vs = &generator.context.vars;
+      var_t var;
+      var.list_n = 0;
+      strcpy(var.name, v.name);
+      // var.type = f.type->as.iden->content;
+      strcpy(var.type, v.type->as.iden->content);
+      ul_dyn_append(vs, var);
+      if (!t.is_builtin && t.kind == TY_STRUCT) {
+        generate_type(v.type);
+        gprintf(" %s;", v.name);
+        gprintf("{");
+        gprintf("unsigned int old_arena=get_arena();");
+        gprintf("set_arena(new_arena(sizeof(struct __ul_internal_%s)));",
+                t.name);
+        gprintf("%s", v.name);
+        gprintf("= alloc(sizeof(struct __ul_internal_%s), 1);", t.name);
+        gprintf("*%s=(struct __ul_internal_%s){0};", v.name, t.name);
+        gprintf("set_arena(old_arena);");
+        if (type_has_constructor(t.name)) {
+          gprintf("__internal_%s_%s(%s);", t.name, t.name, v.name);
+        }
+        gprintf("}");
+      }
     }
   }
 }
@@ -404,7 +460,11 @@ void generate_expression_as_string(ast_t stmt) {
   if (streq(tname, "string"))
     generate_expression(stmt);
   else {
-    if (is_int_type(tname)) {
+    if (streq(tname, "char")) {
+      gprintf("__UL_char_to_string(");
+      generate_expression(stmt);
+      gprintf(")");
+    } else if (is_int_type(tname)) {
       gprintf("__UL_string_of_%s_int(", t.is_signed ? "signed" : "unsigned");
       generate_expression(stmt);
       gprintf(")");
@@ -447,7 +507,6 @@ void generate_binop(ast_t binop) {
     generate_expression(b.right);
     gprintf(")");
   }
-  //
 }
 
 void generate_iden(ast_t iden) {
@@ -529,36 +588,21 @@ void generate_access(ast_t access) {
     gprintf("->%s", a.field->as.iden->content);
   } else {
     ast_funcall_t f = *a.field->as.funcall;
-    if (streq(f.name, "append")) {
-      // if (streq(t.name, "string")) {
-      gprintf("__UL_append_string(");
-      generate_expression(a.object);
-      gprintf(",");
-      for (size_t i = 0; i < ul_dyn_length(f.args); ++i) {
-        if (i > 0) {
-          gprintf(", ");
-        }
-        ast_t arg = dyn_ast_get(f.args, i);
-        generate_expression(arg);
-      }
-      gprintf(")");
-      // }
-    } else {
-      gprintf("__internal_%s_%s(", t.name, f.name);
-      size_t i;
-      for (i = 0; i < ul_dyn_length(f.args); ++i) {
-        if (i > 0) {
-          gprintf(", ");
-        }
-        ast_t arg = dyn_ast_get(f.args, i);
-        generate_expression(arg);
-      }
+    gprintf("__internal_%s_%s(",
+            t.kind == TY_ARRAY ? "__internal_array_t" : t.name, f.name);
+    size_t i;
+    for (i = 0; i < ul_dyn_length(f.args); ++i) {
       if (i > 0) {
         gprintf(", ");
       }
-      generate_expression(a.object);
-      gprintf(")");
+      ast_t arg = dyn_ast_get(f.args, i);
+      generate_expression(arg);
     }
+    if (i > 0) {
+      gprintf(", ");
+    }
+    generate_expression(a.object);
+    gprintf(")");
   }
 }
 
@@ -639,7 +683,6 @@ void generate_expression(ast_t stmt) {
     break;
   }
   ul_logger_erro(ast_kind_to_str(stmt->kind));
-  // printf("%d", stmt->kind);
   ul_assert_location(stmt->loc, false,
                      "This kind of expression is not implemented yet");
 }
@@ -649,6 +692,12 @@ unsigned int loops_n = 0;
 void generate_loop(ast_t loop) {
   loops_n++;
   ast_loop_t l = *loop->as.loop;
+
+  var_t var;
+  strcpy(var.name, l.varname);
+  strcpy(var.type, "i32");
+  ul_dyn_append(&generator.context.vars, var);
+
   gprintf("{");
 
   gprintf("i32 __ul_internal_init%d = ", loops_n);
@@ -671,10 +720,7 @@ void generate_loop(ast_t loop) {
 
   generate_statement(l.stmt);
   gprintf("}");
-  var_t var;
-  strcpy(var.name, l.varname);
-  strcpy(var.type, "i32");
-  ul_dyn_append(&generator.context.vars, var);
+
   loops_n--;
 }
 
@@ -816,7 +862,6 @@ void generate_statement(ast_t stmt) {
     generate_expression(stmt);
     gprintf(";\n");
   }
-  // printf("%ld %ld\n", ul_dyn_length(generator.context.vars), l);
 }
 
 void generate_fundef_prototype(ast_t stmt, bool prefix) {

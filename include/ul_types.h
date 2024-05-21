@@ -13,6 +13,7 @@ typedef enum type_kind_t {
   TY_STRUCT,
   TY_ENUM,
   TY_PRIMITIVE,
+  TY_ARRAY,
 } type_kind_t;
 
 typedef struct type_t {
@@ -24,6 +25,7 @@ typedef struct type_t {
   bool is_builtin;
   bool is_signed;
   size_t size;
+  int list_n; // if kind = TY_ARRAY then type is name []...[] with n '[]'
 } type_t;
 
 #endif // UL_TYPES_H

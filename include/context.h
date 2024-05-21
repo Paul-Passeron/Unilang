@@ -15,6 +15,7 @@
 typedef struct var_t {
   char name[128];
   char type[128];
+  int list_n;
 } var_t;
 
 typedef __internal_dyn_array_t var_array_t;

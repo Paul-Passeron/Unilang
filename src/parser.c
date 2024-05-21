@@ -255,13 +255,15 @@ ast_t parse_charlit(parser_t *p) {
   return new_charlit(loc, tok.lexeme);
 }
 
+ast_t parse_type(parser_t *p);
+
 ast_t parse_fundef_param(parser_t *p) {
   expect(*p, T_WORD);
   location_t loc = peek_loc(*p);
   token_t tok = consume_parser(p);
   expect(*p, T_COLON);
   consume_parser(p);
-  ast_t type = parse_identifier(p);
+  ast_t type = parse_type(p);
   return new_fundef_param(loc, type, tok.lexeme);
 }
 
@@ -368,7 +370,7 @@ ast_t parse_tdef_struct(parser_t *p) {
       set_arena(old_arena);
       fdef->as.fundef->name = mangled_name;
       ast_t this_param =
-          new_fundef_param(loc, new_iden(loc, type_name), "this");
+          new_fundef_param(loc, new_type(loc, type_name, 0), "this");
       ul_dyn_append(&fdef->as.fundef->params, this_param);
       ul_dyn_append(&methods, fdef);
     } else {
@@ -387,8 +389,10 @@ ast_t parse_tdef_struct(parser_t *p) {
   expect(*p, T_CLOSEBRACE);
   consume_parser(p);
   // TODO: actually calculates the size of type
-  type_t res = {{0}, TY_STRUCT, types, fields, methods, false, false, 0};
+  type_t res = {{0}, TY_STRUCT, types, fields, methods, false, false, 0, 0};
   strcpy(res.name, type_name);
+  res.list_n = 0;
+  res.kind = TY_STRUCT;
   return new_tdef(loc, res);
 }
 
@@ -428,6 +432,20 @@ ast_t parse_assignement(parser_t *p) {
   expect(*p, T_SEMICOLON);
   consume_parser(p);
   return new_assignement(loc, expr, value);
+}
+
+ast_t parse_iter(parser_t *p) {
+  expect_lexeme(*p, "iter");
+  location_t loc = peek_loc(*p);
+  consume_parser(p);
+  ast_t var = parse_identifier(p);
+  expect(*p, T_COLON);
+  consume_parser(p);
+  ast_t expr = parse_expression(p);
+  expect(*p, T_BIGARR);
+  consume_parser(p);
+  ast_t body = parse_statement(p);
+  return new_iter(loc, var, expr, body);
 }
 
 ast_t parse_statement(parser_t *p) {
@@ -477,6 +495,11 @@ ast_t parse_statement(parser_t *p) {
     ul_logger_info_location(peek_parser(*p).location,
                             "Parsing current statement as assignement");
     return parse_assignement(p);
+  }
+  if (streq(tok.lexeme, "iter")) {
+    ul_logger_info_location(peek_parser(*p).location,
+                            "Parsing current statement as iter loop");
+    return parse_iter(p);
   }
 
   ul_logger_info_location(peek_parser(*p).location,
@@ -573,6 +596,20 @@ ast_t parse_loop(parser_t *p) {
   return new_loop(loc, varname, init, end, body, is_strict);
 }
 
+ast_t parse_type(parser_t *p) {
+  expect(*p, T_WORD);
+  location_t loc = peek_loc(*p);
+  char *name = consume_parser(p).lexeme;
+  int list_n = 0;
+  while (peek_kind(*p) == T_OPENBRACKET) {
+    consume_parser(p);
+    expect(*p, T_CLOSEBRACKET);
+    consume_parser(p);
+    list_n++;
+  }
+  return new_type(loc, name, list_n);
+}
+
 ast_t parse_vardef(parser_t *p) {
   expect_lexeme(*p, "let");
   location_t loc = peek_loc(*p);
@@ -587,7 +624,7 @@ ast_t parse_vardef(parser_t *p) {
   expect(*p, T_COLON);
   consume_parser(p);
 
-  ast_t type = parse_identifier(p);
+  ast_t type = parse_type(p);
 
   if (peek_kind(*p) == T_SEMICOLON) {
     consume_parser(p);
