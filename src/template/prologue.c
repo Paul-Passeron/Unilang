@@ -284,7 +284,7 @@ struct __internal_array_t {
 __internal_array_t new_array(size_t stride, bool is_ptr);
 void array_t_append_raw(__internal_array_t arr, ...);
 
-#define __internal___internal_array_t_append(elem, arr)                        \
+#define __UL___internal___internal_array_t_append(elem, arr)                   \
   array_t_append_raw(arr, elem);
 
 void resize_arr(__internal_array_t arr) {
@@ -342,10 +342,10 @@ __internal_array_t new_array(size_t stride, bool is_ptr) {
   return arr;
 }
 
-#define __internal___internal_array_t_get(index, arr, type)                    \
+#define __UL___internal___internal_array_t_get(index, arr, type)               \
   *((type *)(array_get(index, arr)))
 
-#define __internal___internal_array_t_length(arr) arr->length
+#define __UL___internal___internal_array_t_length(arr) arr->length
 
 void *array_get(size_t index, __internal_array_t arr) {
   if (index > arr->length)

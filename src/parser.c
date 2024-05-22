@@ -10,6 +10,9 @@
 
 unsigned int parser_arena;
 
+#ifndef FUN_PREFIX
+#define FUN_PREFIX "__UL_"
+#endif
 parser_t new_parser(token_array_t toks) {
   parser_t res;
   size_t l = ul_dyn_length(toks);
@@ -295,8 +298,7 @@ ast_t parse_fundef(parser_t *p) {
   expect(*p, T_COLON);
   consume_parser(p);
 
-  ast_t ret_type = parse_identifier(p);
-  // printf("RET TYPE IS %p\n", ret_type);
+  ast_t ret_type = parse_type(p);
 
   expect(*p, T_BIGARR);
   consume_parser(p);

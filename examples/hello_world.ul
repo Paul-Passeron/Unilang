@@ -1,12 +1,8 @@
 @include "stdlib/io.ul"
-
+@include "stdlib/array.ul"
 
 let entry(): void => {
-  let l: i32[];
-  loop i: 1 ->> 100 => {
-    l.append(i);
+  iter i: range(0, 5) => {
+    println("Iteration " + i);
   }
-  print_num(l[53]);
-  println("");
-  println("Hello, World !");
-}
+} 

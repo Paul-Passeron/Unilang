@@ -1,0 +1,15 @@
+/**
+ * array.ul
+ * Copyright (C) Paul Passeron
+ * Unilang Standard Library Array 
+ * Paul Passeron <paul.passeron2@gmail.com>
+**/
+
+
+let range(start: i32, end: i32): i32[] => {
+  let res: i32[];
+  loop i: start ->> end => {
+    res.append(i);
+  }
+  return res;
+}
