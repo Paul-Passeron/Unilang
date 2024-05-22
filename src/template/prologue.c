@@ -325,6 +325,30 @@ void array_t_append_raw(__internal_array_t arr, ...) {
   va_end(ptr);
 }
 
+void array_t_set_raw(__internal_array_t arr, size_t index, ...) {
+
+  va_list ptr;
+  va_start(ptr, index);
+  if (arr->is_ptr) {
+    void *tmp = va_arg(ptr, void *);
+    va_end(ptr);
+    if (index >= arr->length)
+      return;
+    ((void **)arr->contents)[arr->length] = tmp;
+  } else {
+    __internal_array_t_cast_t tmp = va_arg(ptr, __internal_array_t_cast_t);
+    va_end(ptr);
+    if (index >= arr->length)
+      return;
+    for (size_t i = 0; i < arr->stride; i++) {
+      ((char *)arr->contents)[i + arr->stride * index] = ((char *)(&tmp))[i];
+    }
+  }
+}
+
+#define __UL___internal___internal_array_t_set(index, elem, arr)               \
+  array_t_set_raw(arr, index, elem)
+
 __internal_array_t new_array(size_t stride, bool is_ptr) {
   unsigned int old_arena = get_arena();
   unsigned int arena = new_arena(sizeof(struct __internal_array_t));

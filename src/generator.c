@@ -102,6 +102,13 @@ const type_t CSTR_TYPE = {.name = "cstr",
                           .is_signed = false,
                           .list_n = 0};
 
+type_t ARR_TYPE = {.name = "__internal_array_t",
+                   .is_builtin = true,
+                   .size = 8,
+                   .kind = TY_ARRAY,
+                   .is_signed = false,
+                   .list_n = 0};
+
 void set_generator_target(const char *target) {
   FILE *f = fopen(target, "w");
   if (f == NULL) {
@@ -122,6 +129,7 @@ void set_generator_target(const char *target) {
   ul_dyn_append(&generator.context.types, I64_TYPE);
   ul_dyn_append(&generator.context.types, VOID_TYPE);
   ul_dyn_append(&generator.context.types, CSTR_TYPE);
+  ul_dyn_append(&generator.context.types, ARR_TYPE);
   generator.target = f;
   generator.failed = false;
 }
@@ -140,7 +148,6 @@ type_t get_type_by_name(const char *name, bool *found) {
       return t;
     }
   }
-  printf("%s\n", name);
   ul_assert(false, "COULD NOT FIND TYPE BY NAME");
 
   return (type_t){0};
@@ -215,9 +222,8 @@ type_t get_type_of_var(const char *name, bool *found_name, bool *found_type) {
     if (streq(v.name, name)) {
       *found_name = true;
       res = get_type_by_name(v.type, found_type);
-      res.list_n = 0;
+      res.list_n = v.list_n;
       if (v.list_n > 0) {
-        res.list_n = v.list_n;
         res.kind = TY_ARRAY;
       }
       return res;
@@ -287,10 +293,8 @@ void generate_fundef_param(ast_t fundef_param) {
   var_array_t *vs = &generator.context.vars;
   var_t var;
   strcpy(var.name, f.name);
-  strcpy(var.type, f.type->as.iden->content);
-  if (f.type->kind != A_IDEN) {
-    var.list_n = f.type->as.type->list_n;
-  }
+  strcpy(var.type, f.type->as.type->name);
+  var.list_n = f.type->as.type->list_n;
   ul_dyn_append(vs, var);
 }
 
@@ -577,7 +581,17 @@ type_t get_type_of_expr(ast_t expr) {
     ast_access_t a = *expr->as.access;
     type_t t = get_type_of_expr(a.object);
     if (a.field->kind == A_FUNCALL) {
-      return get_method_ret_type(t.name, a.field->as.funcall->name);
+      char *n = a.field->as.funcall->name;
+      if (t.kind == TY_ARRAY && (streq(n, "set"))) {
+        return VOID_TYPE;
+      } else if (t.kind == TY_ARRAY && (streq(n, "append"))) {
+        return VOID_TYPE;
+      } else if (t.kind == TY_ARRAY && (streq(n, "length"))) {
+        return U32_TYPE;
+      } else {
+        return get_method_ret_type(
+            t.kind == TY_ARRAY ? "__internal_array_t" : t.name, n);
+      }
     } else {
       return get_type_of_member(t.name, a.field->as.iden->content);
     }
@@ -588,6 +602,10 @@ type_t get_type_of_expr(ast_t expr) {
   } break;
   case A_INDEX: {
     type_t t = get_type_of_expr(expr->as.index->value);
+    if (t.list_n > 0) {
+      t.list_n -= 1;
+      return t;
+    }
     if (streq(t.name, "cstr") || streq(t.name, "string")) {
       return get_type_by_name("char", NULL);
     } else {
@@ -610,6 +628,7 @@ type_t get_type_of_expr(ast_t expr) {
 void generate_access(ast_t access) {
   ast_access_t a = *access->as.access;
   type_t t = get_type_of_expr(a.object);
+  // printf("FOUND ARRAY ? %d !\n", t.list_n);
   if (is_int_type(t.name) && t.list_n == 0) {
     ul_assert_location(access->loc, false, "INT TYPE IN ACCESS");
   }
@@ -619,7 +638,8 @@ void generate_access(ast_t access) {
   } else {
     ast_funcall_t f = *a.field->as.funcall;
     gprintf(FUN_PREFIX "__internal_%s_%s(",
-            t.kind == TY_ARRAY ? "__internal_array_t" : t.name, f.name);
+            t.list_n > 0 || t.kind == TY_ARRAY ? "__internal_array_t" : t.name,
+            f.name);
     size_t i;
     for (i = 0; i < ul_dyn_length(f.args); ++i) {
       if (i > 0) {
@@ -733,6 +753,7 @@ void generate_loop(ast_t loop) {
   var_t var;
   strcpy(var.name, l.varname);
   strcpy(var.type, "i32");
+  var.list_n = 0;
   ul_dyn_append(&generator.context.vars, var);
 
   gprintf("{");
@@ -832,7 +853,7 @@ int iter_index = 0;
 
 void generate_iter(ast_t iter) {
   ast_iter_t i = *iter->as.iter;
-  gprintf("__internal_array_t __internal_arr%d = ", iter_index);
+  gprintf("{__internal_array_t __internal_arr%d = ", iter_index);
   generate_expression(i.itered);
   gprintf(";");
   gprintf("for(size_t __internal_index%d=0; __internal_index%d< " FUN_PREFIX
@@ -864,7 +885,7 @@ void generate_iter(ast_t iter) {
 
   iter_index++;
   generate_statement(i.stmt);
-  gprintf("}");
+  gprintf("}}");
   iter_index--;
 }
 

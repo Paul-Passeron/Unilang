@@ -13,3 +13,15 @@ let range(start: i32, end: i32): i32[] => {
   }
   return res;
 }
+
+let sort(arr: i32[]): void => {
+  loop i: 0 -> arr.length() => {
+    loop j: i + 1 -> arr.length() => {
+      if arr[i] > arr[j] => {
+        let tmp: i32 => arr[i];
+        arr.set(i, arr[j]);
+        arr.set(j, tmp);
+      }
+    }
+  }
+}
