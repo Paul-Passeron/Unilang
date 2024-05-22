@@ -139,7 +139,7 @@ typedef struct arena_t {
   void *contents;
 } arena_t;
 
-#define MAX_ARENAS_NUM 1024
+#define MAX_ARENAS_NUM (1024 * 256)
 
 arena_t __internal_arenas[MAX_ARENAS_NUM] = {0};
 bool __internal_arenas_popul[MAX_ARENAS_NUM] = {0};
@@ -261,6 +261,7 @@ void __UL_exit(u8 exit_code) {
 int main(void) {
   unsigned int default_arena = new_arena(1);
   set_arena(default_arena);
+  create_logger(&ul_global_logger);
   __UL_entry();
   __UL_exit(0);
   return 0; // Not needed but used so that all compilers are happy
@@ -287,9 +288,17 @@ void array_t_append_raw(__internal_array_t arr, ...);
   array_t_append_raw(arr, elem);
 
 void resize_arr(__internal_array_t arr) {
-  // TODO: double the size
-  printf("[ERROR]: TODO: implement resize_arr\n");
-  __UL_exit(1);
+  size_t new_cap = 2 * arr->capacity;
+  unsigned int old_arena = get_arena();
+  unsigned int arena = new_arena(new_cap * arr->stride);
+  set_arena(arena);
+  void *new_contents = alloc(new_cap * arr->stride, 1);
+  set_arena(old_arena);
+  memcpy(new_contents, arr->contents, arr->stride * arr->capacity);
+  destroy_arena(arr->content_arena);
+  arr->content_arena = arena;
+  arr->capacity = new_cap;
+  arr->contents = new_contents;
 }
 
 typedef struct {
@@ -331,4 +340,15 @@ __internal_array_t new_array(size_t stride, bool is_ptr) {
   arr->length = 0;
   set_arena(old_arena);
   return arr;
+}
+
+#define __internal___internal_array_t_get(index, arr, type)                    \
+  *((type *)(array_get(index, arr)));
+
+#define __internal___internal_array_t_length(arr) arr->length
+
+void *array_get(size_t index, __internal_array_t arr) {
+  if (index > arr->length)
+    return NULL;
+  return (char *)arr->contents + arr->stride * index;
 }

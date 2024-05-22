@@ -2,11 +2,12 @@
 
 
 let entry(): void => {
-  let l: string[];
-  l.append("hello");
-  l.append("world");
-  iter s: l => {
-    println(s);
+  let l: i32[];
+  loop i: 1 ->> 100 => {
+    l.append(i);
+  }
+  iter num: l => {
+    println("" + num);
   }
   println("Hello, World !");
 }

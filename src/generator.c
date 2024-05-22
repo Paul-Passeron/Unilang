@@ -580,7 +580,7 @@ void generate_access(ast_t access) {
   ast_access_t a = *access->as.access;
   // Should do some checks here
   type_t t = get_type_of_expr(a.object);
-  if (is_int_type(t.name)) {
+  if (is_int_type(t.name) && t.list_n == 0) {
     ul_assert_location(access->loc, false, "INT TYPE IN ACCESS");
   }
   if (a.field->kind == A_IDEN) {
@@ -791,6 +791,44 @@ void generate_while(ast_t stmt) {
   gprintf(")");
   generate_statement(w.stmt);
 }
+int iter_index = 0;
+
+void generate_iter(ast_t iter) {
+  ast_iter_t i = *iter->as.iter;
+  gprintf("__internal_array_t __internal_arr%d = ", iter_index);
+  generate_expression(i.itered);
+  gprintf(";");
+  gprintf("for(size_t __internal_index%d=0; __internal_index%d< "
+          "__internal___internal_array_t_length(__internal_arr%d); "
+          "__internal_index%d++){",
+          iter_index, iter_index, iter_index, iter_index);
+  type_t t = get_type_of_expr(i.itered);
+  if (t.list_n > 1) {
+    gprintf("__internal_array_t ");
+  } else {
+    gprintf("%s ", t.name);
+  }
+  gprintf("%s = __internal___internal_array_t_get(__internal_index%d, "
+          "__internal_arr%d, ",
+          i.var->as.iden->content, iter_index, iter_index);
+  if (t.list_n > 1) {
+    gprintf("__internal_array_t ");
+  } else {
+    gprintf("%s ", t.name);
+  }
+  gprintf(");");
+  var_t v;
+
+  strcpy(v.name, i.var->as.iden->content);
+  strcpy(v.type, t.name);
+  v.list_n = t.list_n - 1;
+  ul_dyn_append(&generator.context.vars, v);
+
+  iter_index++;
+  generate_statement(i.stmt);
+  gprintf("}");
+  iter_index--;
+}
 
 void generate_statement(ast_t stmt) {
   size_t l = ul_dyn_length(generator.context.vars);
@@ -853,6 +891,12 @@ void generate_statement(ast_t stmt) {
       ul_dyn_destroy_last(&generator.context.vars);
     }
 
+  } break;
+  case A_ITER: {
+    generate_iter(stmt);
+    while (ul_dyn_length(generator.context.vars) > l) {
+      ul_dyn_destroy_last(&generator.context.vars);
+    }
   } break;
   default:
     found = false;
