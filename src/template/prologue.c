@@ -1,4 +1,5 @@
 #include <fcntl.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -272,13 +273,62 @@ struct __internal_array_t {
   size_t capacity;
   size_t length;
   size_t stride;
+  unsigned int arena;
+  unsigned int content_arena;
   bool is_ptr;
 };
 
+#define ARR_MIN_CAP 16
 #define __internal_new_array(type, is_ptr) new_array(sizeof(type), is_ptr)
 __internal_array_t new_array(size_t stride, bool is_ptr);
-void __internal___internal_array_t_append_raw(__internal_array_t arr, ...);
+void array_t_append_raw(__internal_array_t arr, ...);
 
 #define __internal___internal_array_t_append(elem, arr)                        \
-  __internal___internal_array_t_append_raw(arr, elem);
-;
+  array_t_append_raw(arr, elem);
+
+void resize_arr(__internal_array_t arr) {
+  // TODO: double the size
+  printf("[ERROR]: TODO: implement resize_arr\n");
+  __UL_exit(1);
+}
+
+typedef struct {
+  i64 dummy;
+} __internal_array_t_cast_t;
+
+void array_t_append_raw(__internal_array_t arr, ...) {
+  if (arr->length >= arr->capacity) {
+    resize_arr(arr);
+  }
+  va_list ptr;
+  va_start(ptr, arr);
+  if (arr->is_ptr) {
+    void *tmp = va_arg(ptr, void *);
+    ((void **)arr->contents)[arr->length] = tmp;
+  } else {
+    __internal_array_t_cast_t tmp = va_arg(ptr, __internal_array_t_cast_t);
+    for (size_t i = 0; i < arr->stride; i++) {
+      ((char *)arr->contents)[i + arr->stride * arr->length] =
+          ((char *)(&tmp))[i];
+    }
+  }
+  arr->length++;
+  va_end(ptr);
+}
+
+__internal_array_t new_array(size_t stride, bool is_ptr) {
+  unsigned int old_arena = get_arena();
+  unsigned int arena = new_arena(sizeof(struct __internal_array_t));
+  set_arena(arena);
+  __internal_array_t arr = alloc(sizeof(struct __internal_array_t), 1);
+  arr->arena = arena;
+  arr->stride = stride;
+  arr->is_ptr = is_ptr;
+  arr->content_arena = new_arena(ARR_MIN_CAP * stride);
+  set_arena(arr->content_arena);
+  arr->contents = alloc(ARR_MIN_CAP * stride, 1);
+  arr->capacity = ARR_MIN_CAP;
+  arr->length = 0;
+  set_arena(old_arena);
+  return arr;
+}

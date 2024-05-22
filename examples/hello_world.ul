@@ -2,11 +2,11 @@
 
 
 let entry(): void => {
-  // let l: string[];
-  // l.append("hello");
-  // l.append("world");
-  // iter s: l => {
-  //   println(s);
-  // }
+  let l: string[];
+  l.append("hello");
+  l.append("world");
+  iter s: l => {
+    println(s);
+  }
   println("Hello, World !");
 }
