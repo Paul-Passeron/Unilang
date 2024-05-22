@@ -376,3 +376,12 @@ void *array_get(size_t index, __internal_array_t arr) {
     return NULL;
   return (char *)arr->contents + arr->stride * index;
 }
+
+void __UL___internal___internal_array_t_swap(size_t i, size_t j,
+                                             __internal_array_t arr) {
+  char *contents[sizeof(__internal_array_t_cast_t)] = {0};
+  memcpy(contents, arr->contents + i * arr->stride, arr->stride);
+  memcpy(arr->contents + i * arr->stride, arr->contents + j * arr->stride,
+         arr->stride);
+  memcpy(arr->contents + j * arr->stride, contents, arr->stride);
+}

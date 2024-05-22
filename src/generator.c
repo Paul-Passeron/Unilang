@@ -109,7 +109,10 @@ type_t ARR_TYPE = {.name = "__internal_array_t",
                    .is_signed = false,
                    .list_n = 0};
 
+str_array_t enums_names;
+
 void set_generator_target(const char *target) {
+  enums_names = new_str_dyn();
   FILE *f = fopen(target, "w");
   if (f == NULL) {
     ul_logger_erro("Could not set generator to target...");
@@ -148,6 +151,13 @@ type_t get_type_by_name(const char *name, bool *found) {
       return t;
     }
   }
+
+  // for (size_t i = 0; i < enums_names.length; i++) {
+  //   if (streq(name, dyn_str_get(enums_names, i))) {
+  //     return I32_TYPE;
+  //   }
+  // }
+  printf("%s", name);
   ul_assert(false, "COULD NOT FIND TYPE BY NAME");
 
   return (type_t){0};
@@ -174,6 +184,11 @@ bool is_int_type(char *name) {
     return true;
   if (streq(name, "bool"))
     return true;
+  for (size_t i = 0; i < enums_names.length; i++) {
+    if (streq(name, dyn_str_get(enums_names, i))) {
+      return true;
+    }
+  }
   return false;
 }
 
@@ -229,6 +244,7 @@ type_t get_type_of_var(const char *name, bool *found_name, bool *found_type) {
       return res;
     }
   }
+  printf("%s", name);
   ul_assert(false, "COULD NOT FIND TYPE BY VAR");
   return (type_t){0};
 }
@@ -457,6 +473,12 @@ void generate_operator(token_kind_t op) {
   case T_NOT:
     gprintf("!");
     break;
+  // case T_INCR:
+  // gprintf("++");
+  // break;
+  // case T_DECR:
+  // gprintf("--");
+  // break;
   default:
     ul_assert(false, "THIS KIND OF OPERATOR IS NOT IMPLEMENTED !");
   }
@@ -800,6 +822,8 @@ void generate_return(ast_t ret) {
 
 void generate_tdef(ast_t tdef) {
   ast_tdef_t t = *tdef->as.tdef;
+  if (t.type.kind == TY_ENUM)
+    return;
   // gprintf("typedef struct __ul_internal%s %s")
   gprintf("typedef struct __ul_internal_%s {", t.type.name);
   size_t i;
@@ -985,6 +1009,25 @@ void generate_fundef_prototype(ast_t stmt) {
   }
 }
 
+void generate_enum(ast_t enumdef) {
+  ast_tdef_t e = *enumdef->as.tdef;
+  type_t t = e.type;
+  gprintf("typedef enum %s {", t.name);
+  for (size_t i = 0; i < t.members_names.length; i++) {
+    char *name = dyn_str_get(t.members_names, i);
+    if (i > 0)
+      gprintf(",");
+    gprintf("%s", name);
+    var_t v;
+    strcpy(v.name, name);
+    v.list_n = 0;
+    strcpy(v.type, t.name);
+    ul_dyn_append(&generator.context.vars, v);
+  }
+  gprintf("}%s;", t.name);
+  ul_dyn_append(&generator.context.types, t);
+}
+
 void generate_forward(ast_t prog) {
   ul_logger_info("Generating Forward definitions");
   ast_array_t contents = prog->as.prog->prog;
@@ -992,12 +1035,23 @@ void generate_forward(ast_t prog) {
     ast_t stmt = dyn_ast_get(contents, i);
     if (stmt->kind == A_TDEF) {
       ast_tdef_t t = *stmt->as.tdef;
-      ul_dyn_append(&generator.context.types, t.type);
-      gprintf("typedef struct __ul_internal_%s * %s;", t.type.name,
-              t.type.name);
-      for (size_t m = 0; m < ul_dyn_length(t.type.methods); m++) {
-        ast_t fdef = dyn_ast_get(t.type.methods, m);
-        generate_fundef_prototype(fdef);
+      if (t.type.kind == TY_ENUM) {
+        generate_enum(stmt);
+      }
+    }
+  }
+  for (size_t i = 0; i < ul_dyn_length(contents); i++) {
+    ast_t stmt = dyn_ast_get(contents, i);
+    if (stmt->kind == A_TDEF) {
+      ast_tdef_t t = *stmt->as.tdef;
+      if (t.type.kind == TY_STRUCT) {
+        ul_dyn_append(&generator.context.types, t.type);
+        gprintf("typedef struct __ul_internal_%s * %s;", t.type.name,
+                t.type.name);
+        for (size_t m = 0; m < ul_dyn_length(t.type.methods); m++) {
+          ast_t fdef = dyn_ast_get(t.type.methods, m);
+          generate_fundef_prototype(fdef);
+        }
       }
     }
   }

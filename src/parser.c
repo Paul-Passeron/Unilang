@@ -176,9 +176,15 @@ ast_t parse_leaf(parser_t *p) {
 
     res = new_access(loc, res, f);
   }
+  // if (peek_kind(*p) == T_INCR || peek_kind(*p) == T_DECR) {
+  //   location_t loc = peek_loc(*p);
+  //   token_kind_t tk = consume_parser(p).kind;
+  //   res = new_unary(loc, tk, res, true);
+  // }
   tok = peek_parser(*p);
   if (tok.kind != T_OPENBRACKET)
     return res;
+
   ul_logger_info_location(tok.location, "Adding indexing to leaf");
 
   consume_parser(p);
@@ -195,7 +201,6 @@ ast_t parse_leaf(parser_t *p) {
     } else {
       f = parse_identifier(p);
     }
-
     res = new_access(loc, res, f);
   }
   return res;
@@ -399,9 +404,36 @@ ast_t parse_tdef_struct(parser_t *p) {
 }
 
 ast_t parse_tdef_enum(parser_t *p) {
-  (void)p;
-  ul_assert(false, "parse_tdef_enum is not implemented yet !");
-  return NULL;
+  expect_lexeme(*p, "enum");
+  location_t loc = peek_loc(*p);
+  consume_parser(p);
+  expect(*p, T_WORD);
+  char *name = consume_parser(p).lexeme;
+  expect(*p, T_BIGARR);
+  consume_parser(p);
+  expect(*p, T_OPENBRACE);
+  consume_parser(p);
+  str_array_t names = new_str_dyn();
+  while (peek_kind(*p) != T_CLOSEBRACE) {
+    expect(*p, T_WORD);
+    char *name = consume_parser(p).lexeme;
+    ul_dyn_append(&names, name);
+    if (peek_kind(*p) != T_COMMA) {
+      break;
+    }
+    expect(*p, T_COMMA);
+    consume_parser(p);
+  }
+  expect(*p, T_CLOSEBRACE);
+  consume_parser(p);
+  type_t t = {0};
+  t.is_builtin = false;
+  t.list_n = 0;
+  t.kind = TY_ENUM;
+  t.members_names = names;
+  t.size = 32 / 8;
+  strcpy(t.name, name);
+  return new_tdef(loc, t);
 }
 
 ast_t parse_tdef_alias(parser_t *p) {
@@ -485,7 +517,14 @@ ast_t parse_statement(parser_t *p) {
     return parse_fundef(p);
   }
   if (streq(tok.lexeme, "struct")) {
+    ul_logger_info_location(peek_parser(*p).location,
+                            "Parsing current statement as struct");
     return parse_tdef(p);
+  }
+  if (streq(tok.lexeme, "enum")) {
+    ul_logger_info_location(peek_parser(*p).location,
+                            "Parsing current statement as enum");
+    return parse_tdef_enum(p);
   }
   if (streq(tok.lexeme, "let")) {
 

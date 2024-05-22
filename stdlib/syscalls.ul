@@ -30,8 +30,15 @@ let syswrite(fd: i32, buf: cstr, count: u64): i64 => {
 **/
 let sysread(fd: i32, count: u64): string => {
   let s: string => new_string(count);
-  syscall3(0, fd, s.contents, count);
-  return s;
+  let actual_count : i32 => syscall3(0, fd, s.contents, count);
+  if  actual_count != count => {
+    print("SYSREAD FAILED ! Expected count: ");
+    print_num(count);
+    print(" vs ");
+    print_num(actual_count);
+    println("");
+  }
+  return s; 
 }
 
 let sysopen(filename: string, flags: u32, mode: u32): u32 => {

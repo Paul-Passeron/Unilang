@@ -112,17 +112,15 @@ void ul_start(int argc, char **argv) {
     ul_logger_erro("Program failed to compile...");
   }
 
-  destroy_lexer(l);
-  destroy_parser(p);
-  destroy_arena(arena);
-
-  // printf("%ld\n", O_CREAT);
+  // destroy_lexer(l);
+  // destroy_parser(p);
+  // destroy_arena(arena);
 }
 
 void ul_exit(unsigned char exit_code) {
-  destroy_generator();
-  clear_allocator();
-  ul_destroy_logger();
+  // destroy_generator();
+  // clear_allocator();
+  // ul_destroy_logger();
   exit(exit_code);
 }
 

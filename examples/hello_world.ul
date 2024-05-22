@@ -1,17 +1,21 @@
-@include "stdlib/io.ul"
-@include "stdlib/array.ul"
+@include "../stdlib/io.ul"
+@include "../stdlib/array.ul"
+
+struct dummy => {
+  a: i32
+}
 
 let entry(): void => {
-  let l: i32[];
-  l.append(2);
-  l.append(5);
-  l.append(1);
-  l.append(7);
-  l.append(3);
+  let l: dummy[];
+  let d: dummy;
+  d.a => 1;
+  let d2: dummy;
+  d2.a => 456;
+  l.append(d);
+  l.append(d2);
+  l.swap(0, 1);
+  iter dd: l => {
+    print(dd.a+" ");
+  }
 
-  sort(l);
-  // iter i: l => {
-  //   print(" " + i);
-  // }
-  //   println("");
 } 

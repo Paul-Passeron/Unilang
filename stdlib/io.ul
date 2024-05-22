@@ -84,7 +84,7 @@ struct file => {
     this.is_valid => 1;
     this.filename => path;
     this.omode => omode;
-    let mode: i32 => 0666;
+    let mode: i32 => 0644;
     if omode == "w" => {
       this.fd => syscreate(path, mode);
       if this.fd >= 0 => {
@@ -171,7 +171,12 @@ struct file => {
 
 }
 
-
-
-
+let fread(path: string): string => {
+  let f: file;
+  f.open(path, "r");
+  f.getstat();
+  let res: string => f.read();
+  f.close();
+  return res;
+}
 
