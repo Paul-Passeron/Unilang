@@ -578,7 +578,6 @@ type_t get_type_of_expr(ast_t expr) {
 
 void generate_access(ast_t access) {
   ast_access_t a = *access->as.access;
-  // Should do some checks here
   type_t t = get_type_of_expr(a.object);
   if (is_int_type(t.name) && t.list_n == 0) {
     ul_assert_location(access->loc, false, "INT TYPE IN ACCESS");
@@ -609,17 +608,24 @@ void generate_access(ast_t access) {
 void generate_index(ast_t index) {
   ast_index_t i = *index->as.index;
   type_t t = get_type_of_expr(i.value);
-  if (streq(t.name, "string")) {
+  if (streq(t.name, "string") && t.list_n == 0) {
     gprintf("(");
     generate_expression(i.value);
     gprintf(")->contents[");
     generate_expression(i.index);
     gprintf("]");
-  } else if (streq(t.name, "cstr")) {
+  } else if (streq(t.name, "cstr") && t.list_n == 0) {
     generate_expression(i.value);
     gprintf("[");
     generate_expression(i.index);
     gprintf("]");
+  } else if (t.list_n > 0) {
+    gprintf("__internal___internal_array_t_get(");
+    generate_expression(i.index);
+    gprintf(", ");
+    generate_expression(i.value);
+    gprintf(", %s", t.list_n > 1 ? "__internal_array_t" : t.name);
+    gprintf(")");
   }
 }
 

@@ -343,7 +343,7 @@ __internal_array_t new_array(size_t stride, bool is_ptr) {
 }
 
 #define __internal___internal_array_t_get(index, arr, type)                    \
-  *((type *)(array_get(index, arr)));
+  *((type *)(array_get(index, arr)))
 
 #define __internal___internal_array_t_length(arr) arr->length
 

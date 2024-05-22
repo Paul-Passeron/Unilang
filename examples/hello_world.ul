@@ -6,8 +6,7 @@ let entry(): void => {
   loop i: 1 ->> 100 => {
     l.append(i);
   }
-  iter num: l => {
-    println("" + num);
-  }
+  print_num(l[53]);
+  println("");
   println("Hello, World !");
 }
