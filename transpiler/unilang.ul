@@ -1,5 +1,9 @@
 @include "../stdlib/io.ul"
 
 let entry(): void => {
-  println("Welcome to the Unilang compiler !");
+  // putchar('a');
+  // putchar('a');
+  // putchar('a');
+  // putchar('a');
+  print("Welcome to the Unilang compiler !".append("\n"));
 }

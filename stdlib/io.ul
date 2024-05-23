@@ -9,14 +9,14 @@
 @include "string.ul"
 @include "stat.ul"
 
-/**
- * putchar - Prints a char on the standard output
- * @param c: The char to print
- * @return: void
-**/
-let putchar(c: char): void => {
-  syswrite(1, string_to_cstr(char_to_string(c)), 1);
-}
+// /**
+//  * putchar - Prints a char on the standard output
+//  * @param c: The char to print
+//  * @return: void
+// **/
+// let putchar(c: char): void => {
+//   syswrite(1, string_to_cstr(char_to_string(c)), 1);
+// }
 
 /**
  * print - Prints a string on the standard output

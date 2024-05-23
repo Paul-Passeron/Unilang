@@ -385,3 +385,5 @@ void __UL___internal___internal_array_t_swap(size_t i, size_t j,
          arr->stride);
   memcpy(arr->contents + j * arr->stride, contents, arr->stride);
 }
+
+void __UL_putchar(char c) { putchar(c); }

@@ -6,16 +6,5 @@ struct dummy => {
 }
 
 let entry(): void => {
-  let l: dummy[];
-  let d: dummy;
-  d.a => 1;
-  let d2: dummy;
-  d2.a => 456;
-  l.append(d);
-  l.append(d2);
-  l.swap(0, 1);
-  iter dd: l => {
-    print(dd.a+" ");
-  }
-
+  println("Hello, World !"); 
 } 

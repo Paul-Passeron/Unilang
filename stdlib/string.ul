@@ -9,9 +9,8 @@ struct string => {
   contents: cstr,
   length: u32,
   arena: u32,
-
+  self_arena: u32,
   let string(): void => {
-    println("Called String default constructor");
     let template: string => "";
     this.contents => template.contents;
     this.arena => template.arena;

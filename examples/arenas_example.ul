@@ -1,0 +1,5 @@
+@include "../stdlib/io.ul"
+
+let entry(): void => {
+  println("Hoho");
+}
